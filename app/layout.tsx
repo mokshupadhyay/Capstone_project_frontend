@@ -36,13 +36,29 @@
 
 'use client';
 
-import { Inter } from 'next/font/google';
+import { Geist, Geist_Mono, Inter } from 'next/font/google';
 import './globals.css';
 import { AuthProvider } from './context/AuthContext';
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
 
-const inter = Inter({ subsets: ['latin'] });
+
+const geistSans = Geist({
+  variable: "--font-geist-sans",
+  subsets: ["latin"],
+});
+
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
+
+export const metadata = {
+  title: "Capstone Project Portal",
+  description:
+    " A comprehensive platform dedicated to the management, submission, and peer review of academic capstone projects.Empowering students to showcase their work while facilitating collaboration between students, faculty, and industry professionals.",
+};
+
 
 export default function RootLayout({
   children,
