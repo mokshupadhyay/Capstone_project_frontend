@@ -1,13 +1,30 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '@/app/context/AuthContext';
-import { projectsApi } from '../api/api';
-import { useRouter, useSearchParams } from 'next/navigation';
+import React, { Suspense } from 'react';
 import Link from 'next/link';
-import Certificate from '../components/certificate/certificate';
 
-const CertificatePage = () => {
+// Loading component for Suspense fallback
+const CertificateLoading = () => {
+    return (
+        <div className="flex justify-center items-center h-96">
+            <div className="text-center">
+                <h1 className="text-2xl mb-4">Loading...</h1>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+            </div>
+        </div>
+    );
+};
+
+// The component that uses useSearchParams inside Suspense
+const CertificateContent = () => {
+    const React = require('react');
+    const { useState, useEffect } = React;
+    const { useAuth } = require('@/app/context/AuthContext');
+    const { projectsApi } = require('../api/api');
+    const { useRouter, useSearchParams } = require('next/navigation');
+    const Link = require('next/link').default;
+    const Certificate = require('../components/certificate/certificate').default;
+
     const { user } = useAuth();
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -150,6 +167,15 @@ const CertificatePage = () => {
                 </div>
             )}
         </div>
+    );
+};
+
+// Main Certificate Page Component
+const CertificatePage = () => {
+    return (
+        <Suspense fallback={<CertificateLoading />}>
+            <CertificateContent />
+        </Suspense>
     );
 };
 

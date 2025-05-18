@@ -4,10 +4,11 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { useRouter } from 'next/navigation';
 
 interface User {
+    name: string;
     id: number;
     username: string;
     email: string;
-    role: string;
+    role: 'student' | 'teacher' | 'admin' | 'manager' | 'coordinator' | 'evaluator' | 'academic_team';
 }
 
 interface AuthContextType {

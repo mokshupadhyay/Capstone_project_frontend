@@ -1657,10 +1657,10 @@ import emailjs from '@emailjs/browser';
 const RegisterForm = () => {
     const { register, isLoading, error } = useAuth();
 
-    // EmailJS configuration
-    const SERVICE_ID = 'service_e9n1859';  // Replace with your Service ID
-    const TEMPLATE_ID = 'template_5w0rjkk';    // Replace with your Template ID
-    const PUBLIC_KEY = '3xgvLzd-Dckj6IpLD'; // Your PUBLIC KEY
+    const SERVICE_ID = process.env.NEXT_PUBLIC_SERVICE_ID;
+    const TEMPLATE_ID = process.env.NEXT_PUBLIC_TEMPLATE_ID;
+    const PUBLIC_KEY = process.env.NEXT_PUBLIC_PUBLIC_KEY;
+
 
     // Initialize EmailJS when component mounts
     useEffect(() => {
@@ -1714,7 +1714,7 @@ const RegisterForm = () => {
     };
 
     // Send OTP to email
-    const handleSendOtp = async (e) => {
+    const handleSendOtp = async (e: { preventDefault: () => void; }) => {
         e.preventDefault();
         setOtpError('');
 
@@ -1750,7 +1750,12 @@ const RegisterForm = () => {
             };
 
             // Send email using EmailJS
-            emailjs.send(SERVICE_ID, TEMPLATE_ID, templateParams);
+            if (SERVICE_ID && TEMPLATE_ID) {
+                emailjs.send(SERVICE_ID, TEMPLATE_ID, templateParams);
+            } else {
+                console.error('SERVICE_ID or TEMPLATE_ID is not defined');
+                // You can also throw an error or handle this situation in a way that makes sense for your application
+            }
 
 
             // Update UI states
@@ -1768,7 +1773,7 @@ const RegisterForm = () => {
     };
 
     // Verify OTP
-    const handleVerifyOtp = (e) => {
+    const handleVerifyOtp = (e: { preventDefault: () => void; }) => {
         e.preventDefault();
         setOtpError('');
 
@@ -1814,8 +1819,12 @@ const RegisterForm = () => {
             };
 
             // Send email using EmailJS
-            emailjs.send(SERVICE_ID, TEMPLATE_ID, templateParams);
-            // Update UI states
+            if (SERVICE_ID && TEMPLATE_ID) {
+                emailjs.send(SERVICE_ID, TEMPLATE_ID, templateParams);
+            } else {
+                console.error('SERVICE_ID or TEMPLATE_ID is not defined');
+                // You can also throw an error or handle this situation in a way that makes sense for your application
+            }
             setCountdown(60); // 60 seconds cooldown
 
             // For development purposes only - remove in production
@@ -1828,7 +1837,7 @@ const RegisterForm = () => {
     };
 
     // Handle registration form submission
-    const handleSubmit = async (e) => {
+    const handleSubmit = async (e: { preventDefault: () => void; }) => {
         e.preventDefault();
         setFormError('');
 
@@ -1856,8 +1865,8 @@ const RegisterForm = () => {
 
             // You can use a different template ID for welcome emails
             await emailjs.send(
-                SERVICE_ID,
-                TEMPLATE_ID, // Consider using a different template for welcome emails
+                SERVICE_ID ?? 'default_service_id',
+                TEMPLATE_ID ?? 'default_template_id',
                 welcomeTemplateParams
             );
 
