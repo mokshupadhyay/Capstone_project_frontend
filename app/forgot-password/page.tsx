@@ -16,12 +16,14 @@ export default function ForgotPasswordPage() {
     };
 
     return (
-        <Suspense fallback={<Loader variant="full-page" text="Loading password reset..." />}>
-            <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white flex items-center justify-center">
-                <div className="fixed inset-0 bg-black/25 backdrop-blur-sm flex items-center justify-center p-4">
-                    <ForgotPasswordModal isOpen={isOpen} onClose={handleClose} />
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
+            <Suspense fallback={<Loader variant="full-page" text="Loading password reset..." />}>
+                <div className="container mx-auto px-4 py-8 flex items-center justify-center min-h-screen">
+                    <div className="w-full max-w-xl">
+                        <ForgotPasswordModal isOpen={isOpen} onClose={handleClose} />
+                    </div>
                 </div>
-            </div>
-        </Suspense>
+            </Suspense>
+        </div>
     );
 }

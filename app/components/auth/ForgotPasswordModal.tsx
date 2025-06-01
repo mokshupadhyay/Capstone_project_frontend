@@ -182,20 +182,23 @@ const ForgotPasswordModal = ({ isOpen, onClose }: ForgotPasswordModalProps) => {
     if (!isOpen) return null;
 
     return (
-        <div className="w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden transform transition-all">
+        <div className="w-full bg-white rounded-2xl shadow-xl overflow-hidden">
             {/* Header */}
-            <div className="relative bg-gradient-to-r from-gray-900 to-black text-white p-8">
+            <div className="relative bg-gradient-to-r from-gray-900 to-black text-white p-10">
                 <div className="absolute top-0 left-0 w-full h-full bg-black opacity-50"></div>
                 <div className="relative z-10">
                     <div className="flex justify-between items-center">
-                        <h2 className="text-2xl font-bold">Reset Password</h2>
-                        <button onClick={onClose} className="text-gray-300 hover:text-white transition-colors">
+                        <h2 className="text-3xl font-bold">Reset Password</h2>
+                        <button
+                            onClick={onClose}
+                            className="text-gray-300 hover:text-white transition-colors p-2 hover:bg-white/10 rounded-full"
+                        >
                             <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                             </svg>
                         </button>
                     </div>
-                    <p className="text-gray-300 mt-2">
+                    <p className="text-gray-300 mt-3 text-lg">
                         {success ? 'Password reset successfully!' : 'Recover access to your account'}
                     </p>
                 </div>
@@ -203,7 +206,7 @@ const ForgotPasswordModal = ({ isOpen, onClose }: ForgotPasswordModalProps) => {
             </div>
 
             {/* Content */}
-            <div className="p-8">
+            <div className="p-10">
                 {isLoading ? (
                     <div className="py-8">
                         <Loader variant="default" size="medium" text="Processing your request..." />

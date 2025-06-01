@@ -14,7 +14,7 @@ interface User {
 interface AuthContextType {
     user: User | null;
     token: string | null;
-    login: (username: string, password: string) => Promise<void>;
+    login: (usernameOrEmail: string, password: string) => Promise<void>;
     register: (username: string, password: string, email: string, role: string) => Promise<void>;
     logout: () => void;
     isLoading: boolean;
@@ -43,9 +43,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setIsLoading(false);
     }, []);
 
-    const login = async (username: string, password: string) => {
+    const login = async (usernameOrEmail: string, password: string) => {
         setIsLoading(true);
         setError(null);
+
+        if (!usernameOrEmail || !password) {
+            setError('All fields are required');
+            setIsLoading(false);
+            return;
+        }
 
         try {
             const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/login`, {
@@ -53,7 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ username, password }),
+                body: JSON.stringify({ usernameOrEmail, password }),
             });
 
             const data = await response.json();
@@ -71,7 +77,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
             // Redirect based on role
             if (data.user.role === 'teacher' || data.user.role === 'admin' || data.user.role === 'manager' || data.user.role === 'coordinator' || data.user.role === 'academic_team') {
-
                 router.push('/dashboard');
             } else if (data.user.role === 'student') {
                 router.push('/dashboard');

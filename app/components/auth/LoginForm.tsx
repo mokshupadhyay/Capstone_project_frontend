@@ -5,8 +5,8 @@ import { useAuth } from '@/app/context/AuthContext';
 import Link from 'next/link';
 
 const LoginForm = () => {
-    const { login, isLoading, error } = useAuth();
-    const [username, setUsername] = useState('');
+    const { login, isLoading, error: authError } = useAuth();
+    const [usernameOrEmail, setUsernameOrEmail] = useState('');
     const [password, setPassword] = useState('');
     const [formError, setFormError] = useState('');
 
@@ -14,17 +14,43 @@ const LoginForm = () => {
         e.preventDefault();
         setFormError('');
 
-        if (!username || !password) {
-            setFormError('All fields are required');
+        // Trim whitespace from inputs
+        const trimmedUsernameOrEmail = usernameOrEmail.trim();
+        const trimmedPassword = password.trim();
+
+        // Validate inputs
+        if (!trimmedUsernameOrEmail) {
+            setFormError('Please enter your username or email');
+            return;
+        }
+
+        if (!trimmedPassword) {
+            setFormError('Please enter your password');
             return;
         }
 
         try {
-            await login(username, password);
+            await login(trimmedUsernameOrEmail, trimmedPassword);
         } catch (err) {
-            setFormError(err instanceof Error ? err.message : 'An error occurred');
+            console.error('Login error:', err);
+            setFormError(err instanceof Error ? err.message : 'An error occurred during login');
         }
     };
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        // Clear form error when user starts typing
+        setFormError('');
+
+        const { id, value } = e.target;
+        if (id === 'usernameOrEmail') {
+            setUsernameOrEmail(value);
+        } else if (id === 'password') {
+            setPassword(value);
+        }
+    };
+
+    // Show either form error or auth error
+    const displayError = formError || authError;
 
     return (
         <div className="w-full max-w-md mx-auto bg-white rounded-2xl shadow-xl overflow-hidden transform hover:shadow-2xl transition-all duration-300">
@@ -38,7 +64,7 @@ const LoginForm = () => {
             </div>
 
             <form onSubmit={handleSubmit} className="px-8 py-8 space-y-6">
-                {(error || formError) && (
+                {displayError && (
                     <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-md">
                         <div className="flex items-center">
                             <div className="flex-shrink-0">
@@ -47,15 +73,15 @@ const LoginForm = () => {
                                 </svg>
                             </div>
                             <div className="ml-3">
-                                <p className="text-sm text-red-700">{error || formError}</p>
+                                <p className="text-sm text-red-700">{displayError}</p>
                             </div>
                         </div>
                     </div>
                 )}
 
                 <div className="space-y-2">
-                    <label htmlFor="username" className="block text-sm font-medium text-gray-700">
-                        Username
+                    <label htmlFor="usernameOrEmail" className="block text-sm font-medium text-gray-700">
+                        Username or Email
                     </label>
                     <div className="relative">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -64,12 +90,13 @@ const LoginForm = () => {
                             </svg>
                         </div>
                         <input
-                            id="username"
+                            id="usernameOrEmail"
                             type="text"
-                            value={username}
-                            onChange={(e) => setUsername(e.target.value)}
-                            placeholder="Enter your username"
+                            value={usernameOrEmail}
+                            onChange={handleInputChange}
+                            placeholder="Enter your username or email"
                             className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-white text-sm placeholder-gray-400 transition-all duration-200"
+                            autoComplete="username email"
                         />
                     </div>
                 </div>
@@ -88,9 +115,10 @@ const LoginForm = () => {
                             id="password"
                             type="password"
                             value={password}
-                            onChange={(e) => setPassword(e.target.value)}
+                            onChange={handleInputChange}
                             placeholder="Enter your password"
                             className="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-white text-sm placeholder-gray-400 transition-all duration-200"
+                            autoComplete="current-password"
                         />
                     </div>
                 </div>

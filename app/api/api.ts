@@ -626,13 +626,13 @@ export const managerApi = {
 // ---------- Auth API ----------
 export const authApi = {
   // Login
-  login: (username: string, password: string): Promise<any> =>
+  login: (usernameOrEmail: string, password: string): Promise<any> =>
     fetch(`${API_URL}/api/login`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ username, password }),
+      body: JSON.stringify({ usernameOrEmail, password }),
     }).then(async (response) => {
       const data = await response.json();
       if (!response.ok) {
