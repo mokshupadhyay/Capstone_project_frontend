@@ -1,10 +1,20 @@
 import { Geist } from 'next/font/google';
 import './globals.css';
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import ClientLayout from './components/layout/ClientLayout';
 
 // Initialize fonts
 const geist = Geist({ subsets: ['latin'] });
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#f8fafc' },
+    { media: '(prefers-color-scheme: dark)', color: '#020617' }
+  ]
+};
 
 export const metadata: Metadata = {
   title: 'Capstone Project Portal',
@@ -21,12 +31,6 @@ export const metadata: Metadata = {
     url: 'https://capstone-project-portal.vercel.app/',
     siteName: 'Capstone Project Portal',
   },
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 1,
-  },
-  themeColor: '#000000',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
@@ -44,7 +48,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={geist.className}>
-      <body className="bg-gray-50">
+      <body className="min-h-screen bg-gradient-to-b from-gray-50/50 to-white/50">
         <ClientLayout>
           {children}
         </ClientLayout>
