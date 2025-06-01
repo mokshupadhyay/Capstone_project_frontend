@@ -461,7 +461,7 @@ const RegisterForm = () => {
                                     <option value="evaluator">Evaluator</option>
                                     <option value="manager">Manager</option>
                                     <option value="coordinator">Coordinator</option>
-                                    <option value="admin">Admin</option>
+                                    {/* <option value="admin">Admin</option> */}
                                 </select>
                             </div>
 

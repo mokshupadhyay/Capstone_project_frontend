@@ -1,11 +1,41 @@
-'use client';
-
-import { Geist, Geist_Mono, Inter } from 'next/font/google';
+import { Geist } from 'next/font/google';
 import './globals.css';
-import { AuthProvider } from './context/AuthContext';
-import Navbar from './components/layout/Navbar';
-import Footer from './components/layout/Footer';
+import type { Metadata } from 'next';
+import ClientLayout from './components/layout/ClientLayout';
 
+// Initialize fonts
+const geist = Geist({ subsets: ['latin'] });
+
+export const metadata: Metadata = {
+  title: 'Capstone Project Portal',
+  description: 'A comprehensive platform for managing and showcasing academic capstone projects. Features include project submission, peer review, and collaboration between students and faculty.',
+  keywords: 'capstone, academic projects, student portal, project management, education platform',
+  authors: [{ name: 'Moksh Upadhyay', url: 'https://mokshdev.vercel.app/' }],
+  creator: 'Moksh Upadhyay',
+  applicationName: 'Capstone Project Portal',
+  openGraph: {
+    type: 'website',
+    locale: 'en_US',
+    title: 'Capstone Project Portal',
+    description: 'Academic excellence through project collaboration',
+    url: 'https://capstone-project-portal.vercel.app/',
+    siteName: 'Capstone Project Portal',
+  },
+  viewport: {
+    width: 'device-width',
+    initialScale: 1,
+    maximumScale: 1,
+  },
+  themeColor: '#000000',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'Capstone Portal',
+  },
+  formatDetection: {
+    telephone: false,
+  },
+};
 
 export default function RootLayout({
   children,
@@ -13,17 +43,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body >
-        <AuthProvider>
-          <div className="min-h-screen flex flex-col">
-            <Navbar />
-            <main className="flex-grow container mx-auto px-4 py-8 pt-[94px]">
-              {children}
-            </main>
-            <Footer />
-          </div>
-        </AuthProvider>
+    <html lang="en" className={geist.className}>
+      <body className="bg-gray-50">
+        <ClientLayout>
+          {children}
+        </ClientLayout>
       </body>
     </html>
   );
