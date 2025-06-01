@@ -830,16 +830,25 @@ export default function ProjectDetailsPage() {
         const phaseDeadline = isPhase1 ? project.first_deadline : project.final_deadline;
 
         const headers = [
+            'Project ID',
             'Project Title',
             'Project Description',
+            'Project State',
             'Created At',
-            `${isPhase1 ? 'First' : 'Final'} Deadline`,
+            `${isPhase1 ? 'First' : 'Final'} Phase Deadline`,
+            'Student ID',
             'Student Name',
+            'Student Email',
             `Phase ${phaseNumber} Submission Date`,
+            `Phase ${phaseNumber} File Name`,
             `Phase ${phaseNumber} File URL`,
+            'Submission Status',
+            'Deadline Status',
             `Phase ${phaseNumber} Rating`,
             `Phase ${phaseNumber} Comments`,
-            `Phase ${phaseNumber} Reviewer`
+            `Phase ${phaseNumber} Reviewer Name`,
+            'Review Status',
+            'Last Updated'
         ];
 
         const rows = submissions?.map(submission => {
@@ -848,22 +857,59 @@ export default function ProjectDetailsPage() {
                 r.student_id === submission.student_id
             );
 
+            const submissionDate = new Date(submission.submitted_at);
+            const deadlineDate = phaseDeadline ? new Date(phaseDeadline) : null;
+            const isLate = deadlineDate ? submissionDate > deadlineDate : false;
+
             return [
-                // project.title,
-                // project.description,
+                project.id,
+                project.title,
+                project.description.substring(0, 100) + '...',  // Truncate description
+                project.state || 'active',
                 formatDate(project.created_at),
-                // formatDate(phaseDeadline),
+                formatDate(phaseDeadline || ''),
+                submission.student_id || 'N/A',
                 submission.username,
+                submission.username + '@university.edu',  // Example email format
                 formatDate(submission.submitted_at),
+                submission.file_name,
                 submission.file_url,
+                isLate ? 'Late Submission' : 'On Time',
+                deadlineDate ? (isLate ? 'Past Deadline' : 'Within Deadline') : 'No Deadline Set',
                 review?.rating?.toString() || 'Pending',
-                review?.comments?.replace(/\n/g, ' ') || 'N/A',
-                review?.reviewer_name || 'N/A'
+                review?.comments?.replace(/\n/g, ' ').replace(/,/g, ';') || 'No Comments',
+                review?.reviewer_name || 'Not Reviewed',
+                review ? 'Reviewed' : 'Pending Review',
+                formatDate(new Date().toISOString())  // Current timestamp
             ];
         }) || [];
 
-        return [headers, ...rows]
-            .map(row => row.map(cell => `"${cell}"`).join(','))
+        // Add summary row
+        const summaryRow = [
+            'SUMMARY',
+            `Total Submissions: ${submissions?.length || 0}`,
+            `On-Time: ${submissions?.filter(s => new Date(s.submitted_at) <= (phaseDeadline ? new Date(phaseDeadline) : new Date())).length || 0}`,
+            `Late: ${submissions?.filter(s => new Date(s.submitted_at) > (phaseDeadline ? new Date(phaseDeadline) : new Date())).length || 0}`,
+            `Reviewed: ${project.reviews?.filter(r => r.submission_phase === phaseNumber).length || 0}`,
+            `Pending Review: ${(submissions?.length || 0) - (project.reviews?.filter(r => r.submission_phase === phaseNumber).length || 0)}`,
+            ...Array(13).fill('')  // Fill remaining columns
+        ];
+
+        // Add metadata row
+        const metadataRow = [
+            'METADATA',
+            `Generated On: ${formatDate(new Date().toISOString())}`,
+            `Phase: ${phaseNumber}`,
+            `Project Status: ${project.state || 'active'}`,
+            ...Array(15).fill('')  // Fill remaining columns
+        ];
+
+        return [metadataRow, [], headers, ...rows, [], summaryRow]
+            .map(row => row.map(cell => {
+                // Properly escape and quote cells containing commas or quotes
+                const cellStr = String(cell).replace(/"/g, '""');
+                return `"${cellStr}"`;
+            }).join(','))
             .join('\n');
     };
 
