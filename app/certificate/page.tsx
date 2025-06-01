@@ -2,6 +2,9 @@
 
 import React, { Suspense } from 'react';
 import Link from 'next/link';
+import { useAuth } from '@/app/context/AuthContext';
+import { useApprovalStatus } from '@/app/hooks/useApprovalStatus';
+import { Clock4 } from 'lucide-react';
 
 // Loading component for Suspense fallback
 const CertificateLoading = () => {
@@ -24,6 +27,7 @@ const CertificateContent = () => {
     const { useRouter, useSearchParams } = require('next/navigation');
     const Link = require('next/link').default;
     const Certificate = require('../components/certificate/certificate').default;
+    const { isApproved, isLoading: approvalLoading } = useApprovalStatus();
 
     const { user } = useAuth();
     const router = useRouter();
@@ -116,6 +120,49 @@ const CertificateContent = () => {
         );
     }
 
+    if (approvalLoading) {
+        return (
+            <div className="flex justify-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600"></div>
+            </div>
+        );
+    }
+
+    if (!user) {
+        return (
+            <div className="flex justify-center items-center h-screen">
+                <div className="text-center">
+                    <h1 className="text-2xl font-bold mb-4">Please log in</h1>
+                    <Link href="/login" className="text-blue-500 hover:text-blue-700">
+                        Go to Login
+                    </Link>
+                </div>
+            </div>
+        );
+    }
+
+    if (isApproved === false) {
+        return (
+            <div className="max-w-xl mx-auto mt-12 p-8 rounded-xl shadow-sm text-center bg-yellow-50 border border-yellow-200">
+                <div className="mb-4">
+                    <Clock4 className="h-12 w-12 text-yellow-500 mx-auto" />
+                </div>
+                <h3 className="text-xl font-semibold mb-2 text-yellow-800">
+                    Account Pending Approval
+                </h3>
+                <p className="mb-6 text-yellow-700">
+                    Your account is pending approval from an administrator. You will be able to access certificates once your account is approved.
+                </p>
+                <button
+                    className="px-4 py-2 rounded-md transition-colors bg-yellow-100 hover:bg-yellow-200 text-yellow-700"
+                    onClick={() => window.location.reload()}
+                >
+                    Check Again
+                </button>
+            </div>
+        );
+    }
+
     if (loading) {
         return (
             <div className="flex justify-center items-center h-96">
@@ -128,7 +175,7 @@ const CertificateContent = () => {
     }
 
     return (
-        <div className="container mx-auto px-4 py-8">
+        <div className="container mx-auto  py-8">
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-3xl font-bold">Project Certificate</h1>
                 <Link href={`/projects/${projectId}`} className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300">
@@ -155,7 +202,7 @@ const CertificateContent = () => {
             ) : null}
 
             {isEligibleForCertificate && certificateData && (
-                <div className="bg-white rounded-lg shadow-lg p-10">
+                <div className="bg-white rounded-lg shadow-lg py-1">
                     <h2 className="text-2xl font-semibold mb-6 text-center">Congratulations! You've earned your certificate</h2>
                     <Certificate
                         studentName={certificateData.studentName}

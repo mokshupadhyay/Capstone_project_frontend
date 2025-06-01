@@ -6,6 +6,9 @@ import Image from 'next/image';
 import Link from 'next/link';
 import Review from '../public/review.jpg';
 import Teacher from '../public/teacher.jpg';
+import instructor from '../public/instructor.jpg';
+import problem from '../public/problem.jpg';
+import uplaodDocument from '../public/uploadingdocumentsThreeStudentsiilustration.jpg';
 
 export default function HomePage() {
   const router = useRouter();
@@ -15,20 +18,23 @@ export default function HomePage() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       {/* Hero Section */}
       <section className="py-12 md:py-20">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-8 md:gap-10">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-12 md:gap-16">
           {/* Text Content */}
           <div className="text-center md:text-left max-w-xl w-full">
-            <h1 className="text-4xl sm:text-5xl font-extrabold text-gray-900 mb-4 md:mb-6 tracking-tight">
-              Capstone Project Portal
+            <h1 className="text-4xl sm:text-5xl font-extrabold text-gray-900 mb-4 md:mb-6 tracking-tight leading-tight">
+              Transform Your Academic Journey
+              <span className="block text-transparent bg-clip-text bg-gradient-to-r from-teal-600 to-cyan-600 mt-2">
+                With Capstone Portal
+              </span>
             </h1>
-            <p className="text-lg text-gray-600 mb-8 md:mb-10 px-4 sm:px-0">
-              Streamline your capstone journey with powerful tools for submission, review, and certification.
+            <p className="text-lg text-gray-600 mb-8 md:mb-10 leading-relaxed">
+              Elevate your capstone experience with our comprehensive platform. Seamlessly manage submissions, collaborate with peers, and achieve academic excellence.
             </p>
 
             {user ? (
               <Link
                 href="/dashboard"
-                className="inline-block bg-black hover:bg-gray-800 text-white font-medium py-3 px-8 rounded-md text-lg transition duration-300 shadow-sm"
+                className="inline-block bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-500 hover:to-cyan-500 text-white font-medium py-3 px-8 rounded-lg text-lg transition duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
               >
                 Go to Dashboard
               </Link>
@@ -36,26 +42,27 @@ export default function HomePage() {
               <div className="flex flex-row gap-4 justify-center md:justify-start">
                 <Link
                   href="/login"
-                  className="inline-block bg-black hover:bg-gray-800 text-white font-medium py-3 px-6 rounded-md text-base sm:text-lg transition duration-300 shadow-sm"
+                  className="inline-block bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-500 hover:to-cyan-500 text-white font-medium py-3 px-8 rounded-lg text-lg transition duration-300 shadow-lg hover:shadow-xl transform hover:scale-105"
                 >
-                  Login
+                  Get Started
                 </Link>
                 <Link
                   href="/register"
-                  className="inline-block border-2 border-black text-black hover:bg-gray-100 font-medium py-3 px-6 rounded-md text-base sm:text-lg transition duration-300"
+                  className="inline-block border-2 border-teal-600 text-teal-600 hover:bg-teal-50 font-medium py-3 px-8 rounded-lg text-lg transition duration-300 transform hover:scale-105"
                 >
-                  Register
+                  Learn More
                 </Link>
               </div>
             )}
           </div>
 
-          {/* Teacher Image */}
-          <div className="w-full md:w-1/2 mt-8 md:mt-0">
+          {/* Hero Image */}
+          <div className="w-full md:w-1/2 relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-teal-100 to-cyan-100 rounded-2xl transform rotate-3"></div>
             <Image
               src={Teacher}
               alt="Teacher working on capstone projects"
-              className="rounded-xl shadow-lg w-full h-auto"
+              className="rounded-2xl shadow-xl w-full h-auto relative transform -rotate-3 transition-transform duration-300 hover:rotate-0"
               placeholder="blur"
               priority
             />
@@ -64,115 +71,134 @@ export default function HomePage() {
       </section>
 
       {/* Features Section */}
-      <section className="py-16 md:py-20 bg-gray-50 rounded-2xl my-8 md:my-12">
-        <div className="text-center mb-10 md:mb-14 px-4">
-          <h2 className="text-2xl md:text-3xl font-bold text-gray-900">Key Features</h2>
-          <p className="text-gray-600 mt-2">Everything you need for seamless capstone management</p>
+      <section className="py-16 md:py-24 bg-gradient-to-b from-gray-50 to-white rounded-3xl my-12 md:my-20">
+        <div className="text-center mb-12 md:mb-16 px-4">
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+            Powerful Features for Your Success
+          </h2>
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+            Everything you need to manage, submit, and excel in your capstone projects
+          </p>
         </div>
 
-        <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6 md:gap-8 px-4">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-12 px-4">
           {[
             {
-              title: 'Project Management',
-              desc: 'Create, assign and track progress of capstone projects with intuitive dashboard tools',
+              title: 'Smart Project Management',
+              desc: 'Intuitive tools for creating, tracking, and managing capstone projects with real-time updates and progress monitoring.',
               icon: (
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                 </svg>
-              )
+              ),
+              image: problem
             },
             {
-              title: 'File Submissions',
-              desc: 'Students submit work with smart PDF compression and built-in certificate generation',
+              title: 'Seamless Submissions',
+              desc: 'Advanced file handling with smart compression, version control, and automatic formatting for professional documentation.',
               icon: (
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
                 </svg>
-              )
+              ),
+              image: uplaodDocument
             },
             {
-              title: 'Role-Based Access',
-              desc: 'Customizable permissions for teachers, students, and evaluators with secure certification system',
+              title: 'Secure Role Management',
+              desc: 'Comprehensive access control system with specialized features for students, teachers, and evaluators.',
               icon: (
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                 </svg>
-              )
+              ),
+              image: instructor
             },
           ].map((feature, i) => (
-            <div key={i} className="bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition">
-              <div className="w-16 h-16 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center text-black mb-5 mx-auto border-2 border-gray-50 shadow-sm">
-                <div className="text-black">
+            <div key={i} className="bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 border border-gray-100">
+              <div className="relative h-48 mb-6 rounded-xl overflow-hidden">
+                <Image
+                  src={feature.image}
+                  alt={feature.title}
+                  className="object-cover w-full h-full transform hover:scale-110 transition-transform duration-300"
+                  width={400}
+                  height={300}
+                />
+              </div>
+              <div className="flex items-center gap-4 mb-4">
+                <div className="w-12 h-12 bg-gradient-to-br from-teal-500 to-cyan-500 rounded-lg flex items-center justify-center text-white shadow-lg">
                   {feature.icon}
                 </div>
+                <h3 className="text-xl font-semibold text-gray-900">{feature.title}</h3>
               </div>
-              <h3 className="text-xl font-semibold text-center text-gray-900 mb-3">{feature.title}</h3>
-              <p className="text-center text-gray-600">{feature.desc}</p>
+              <p className="text-gray-600 leading-relaxed">{feature.desc}</p>
             </div>
           ))}
         </div>
       </section>
 
       {/* How It Works Section */}
-      <section className="py-16 md:py-20">
-        <div className="text-center mb-10 md:mb-14 px-4">
-          <h2 className="text-2xl md:text-3xl font-bold text-gray-900">How It Works</h2>
-          <p className="text-gray-600 mt-2">A simple 3-step workflow for everyone</p>
+      <section className="py-16 md:py-24 bg-gradient-to-b from-gray-900 to-gray-800 rounded-3xl text-white">
+        <div className="text-center mb-12 md:mb-16 px-4">
+          <h2 className="text-3xl md:text-4xl font-bold mb-4">Simple & Effective Workflow</h2>
+          <p className="text-gray-300 text-lg">Three easy steps to capstone success</p>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-10 items-center">
+        <div className="grid lg:grid-cols-2 gap-12 items-center px-4">
           {/* Steps */}
-          <div className="space-y-6 md:space-y-8 px-4 md:px-0">
+          <div className="space-y-8">
             {[
               {
-                step: '1',
-                title: 'Create Projects',
-                desc: 'Teachers create projects, upload resources, and assign students to capstone teams.',
+                step: '01',
+                title: 'Project Creation & Assignment',
+                desc: 'Teachers easily create and customize projects, set guidelines, and assign teams with our intuitive interface.',
                 icon: (
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="white">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                   </svg>
                 )
               },
               {
-                step: '2',
-                title: 'Submit Solutions',
-                desc: 'Students collaborate, develop solutions, and submit finalized project documentation.',
+                step: '02',
+                title: 'Collaborative Development',
+                desc: 'Students work together, share resources, and submit their work through our streamlined submission system.',
                 icon: (
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="white">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                   </svg>
                 )
               },
               {
-                step: '3',
-                title: 'Review & Certify',
-                desc: 'Faculty evaluates submissions, provides feedback, and issues official certifications.',
+                step: '03',
+                title: 'Review & Certification',
+                desc: 'Faculty provides comprehensive feedback and issues digital certifications upon successful completion.',
                 icon: (
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="white">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                   </svg>
                 )
               },
             ].map((item, i) => (
-              <div key={i} className="flex items-start gap-4">
-                <div className="w-12 h-12 bg-black rounded-full flex items-center justify-center text-white text-lg flex-shrink-0 shadow-md">
-                  {item.icon}
+              <div key={i} className="flex items-start gap-6 group">
+                <div className="w-16 h-16 bg-gradient-to-br from-teal-400 to-cyan-400 rounded-2xl flex items-center justify-center text-white text-xl font-bold flex-shrink-0 shadow-lg group-hover:shadow-xl transition-all duration-300 transform group-hover:scale-110">
+                  {item.step}
                 </div>
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-900">{item.title}</h3>
-                  <p className="text-gray-600">{item.desc}</p>
+                  <h3 className="text-xl font-semibold text-white mb-2 group-hover:text-teal-300 transition-colors duration-200">
+                    {item.title}
+                  </h3>
+                  <p className="text-gray-300 leading-relaxed">{item.desc}</p>
                 </div>
               </div>
             ))}
           </div>
 
-          {/* Review Image - Now visible on mobile but optimized */}
-          <div className="mt-8 md:mt-0 px-4 md:px-0">
+          {/* Process Image */}
+          <div className="relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-teal-400/20 to-cyan-400/20 rounded-2xl transform rotate-3"></div>
             <Image
               src={Review}
               alt="Review and feedback process"
-              className="rounded-xl shadow-lg w-full h-auto"
+              className="rounded-2xl shadow-2xl w-full h-auto relative transform -rotate-3 transition-transform duration-300 hover:rotate-0"
               placeholder="blur"
             />
           </div>

@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -34,8 +33,10 @@ interface Project {
     hasSubmittedPhase2: boolean;
     phase1Submission?: Submission;
     phase2Submission?: Submission;
-    final_deadline: string; // Added final deadline
+    final_deadline: string;
+    state: 'active' | 'past';
 }
+
 interface ProjectCardProps {
     project: Project;
     role: string;
@@ -51,11 +52,8 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
         });
     };
 
-    const currentDate = new Date();
-    const finalDeadlineDate = new Date(project.final_deadline);
-    const isPast = finalDeadlineDate < currentDate;
     const isCompleted = project.hasSubmittedPhase1 && project.hasSubmittedPhase2;
-    // Determine status and styling
+    // Determine status and styling based on project state and completion
     let status: string;
     let statusClass: string;
 
@@ -63,8 +61,8 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
         status = 'Completed';
         statusClass = 'bg-green-100 text-green-800';
     } else {
-        status = isPast ? 'Past' : 'Active';
-        statusClass = isPast
+        status = project.state === 'past' ? 'Past' : 'Active';
+        statusClass = project.state === 'past'
             ? 'bg-gray-100 text-gray-800'
             : 'bg-blue-100 text-blue-800';
     }

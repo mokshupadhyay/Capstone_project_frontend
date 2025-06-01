@@ -141,8 +141,8 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
                     <div className="mt-4 md:mt-0 md:ml-6 flex items-center">
                         <div
                             className={`px-3 py-1 rounded-full text-sm font-medium ${isCompleted
-                                    ? 'bg-green-100 text-green-800'
-                                    : 'bg-yellow-100 text-yellow-800'
+                                ? 'bg-green-100 text-green-800'
+                                : 'bg-yellow-100 text-yellow-800'
                                 }`}
                         >
                             {isCompleted ? 'Completed' : 'Pending'}

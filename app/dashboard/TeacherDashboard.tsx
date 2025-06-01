@@ -1,170 +1,12 @@
-// 'use client';
-
-// import { useState, useEffect } from 'react';
-// import Link from 'next/link';
-// import { projectsApi } from '@/app/api/api';
-// import ProjectCard from '@/app/components/projects/ProjectCard';
-// import { FileText, FolderOpen, UploadCloud, CheckCircle2 } from 'lucide-react';
-
-// interface Project {
-//   id: number;
-//   title: string;
-//   description: string;
-//   created_at: string;
-//   submissionCount: number;
-//   files: File[];
-// }
-
-// interface File {
-//   id: number;
-//   project_id: number;
-//   file_name: string;
-//   file_url: string;
-//   file_type: string;
-// }
-
-// const TeacherDashboard = () => {
-//   const [projects, setProjects] = useState<Project[]>([]);
-//   const [isLoading, setIsLoading] = useState(true);
-//   const [error, setError] = useState<string | null>(null);
-
-//   useEffect(() => {
-//     const fetchProjects = async () => {
-//       try {
-//         setIsLoading(true);
-//         const data = await projectsApi.getTeacherProjects();
-//         setProjects(data.projects);
-//       } catch (err) {
-//         setError('Failed to load projects');
-//         console.error(err);
-//       } finally {
-//         setIsLoading(false);
-//       }
-//     };
-
-//     fetchProjects();
-//   }, []);
-
-//   return (
-//     <div>
-//       <div className="flex justify-between items-center mb-6">
-//         <h2 className="text-2xl font-semibold text-gray-800">Your Capstone Projects</h2>
-//         <Link
-//           href="/projects/create"
-//           className="bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded-md flex items-center"
-//         >
-//           <svg
-//             xmlns="http://www.w3.org/2000/svg"
-//             className="h-5 w-5 mr-2"
-//             viewBox="0 0 20 20"
-//             fill="currentColor"
-//           >
-//             <path
-//               fillRule="evenodd"
-//               d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
-//               clipRule="evenodd"
-//             />
-//           </svg>
-//           Create New Project
-//         </Link>
-//       </div>
-
-//       {isLoading ? (
-//         <div className="flex justify-center py-12">
-//           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600"></div>
-//         </div>
-//       ) : error ? (
-//         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-//           {error}
-//         </div>
-//       ) : projects.length === 0 ? (
-//         <div className="text-center py-12 bg-gray-50 rounded-lg">
-//           <h3 className="text-xl font-medium text-gray-700 mb-2">No Projects Yet</h3>
-//           <p className="text-gray-600 mb-6">
-//             Get started by creating your first capstone project
-//           </p>
-//           <Link
-//             href="/projects/create"
-//             className="bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-6 rounded-md inline-flex items-center"
-//           >
-//             <svg
-//               xmlns="http://www.w3.org/2000/svg"
-//               className="h-5 w-5 mr-2"
-//               viewBox="0 0 20 20"
-//               fill="currentColor"
-//             >
-//               <path
-//                 fillRule="evenodd"
-//                 d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
-//                 clipRule="evenodd"
-//               />
-//             </svg>
-//             Create Project
-//           </Link>
-//         </div>
-//       ) : (
-//         <div className="space-y-8">
-//           {projects.map((project) => (
-//             <div key={project.id} className="border rounded-xl shadow-sm hover:shadow-md transition-all duration-300">
-//               <ProjectCard project={project} />
-//             </div>
-//           ))}
-//         </div>
-//       )}
-
-//       <div className="mt-12 bg-gray-50 rounded-lg p-6">
-//         <h3 className="text-xl font-semibold mb-4 text-gray-800">Quick Stats</h3>
-//         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
-//           <div className="bg-white p-5 rounded-xl shadow-sm flex items-center space-x-4">
-//             <FolderOpen className="text-indigo-600 w-6 h-6" />
-//             <div>
-//               <p className="text-sm text-gray-500">Total Projects</p>
-//               <p className="text-2xl font-bold text-gray-800">{projects.length}</p>
-//             </div>
-//           </div>
-
-//           <div className="bg-white p-5 rounded-xl shadow-sm flex items-center space-x-4">
-//             <FileText className="text-green-600 w-6 h-6" />
-//             <div>
-//               <p className="text-sm text-gray-500">Total Submissions</p>
-//               <p className="text-2xl font-bold text-gray-800">
-//                 {projects.reduce((sum, project) => sum + project.submissionCount, 0)}
-//               </p>
-//             </div>
-//           </div>
-
-//           <div className="bg-white p-5 rounded-xl shadow-sm flex items-center space-x-4">
-//             <CheckCircle2 className="text-blue-600 w-6 h-6" />
-//             <div>
-//               <p className="text-sm text-gray-500">Active Projects</p>
-//               <p className="text-2xl font-bold text-gray-800">{projects.length}</p>
-//             </div>
-//           </div>
-
-//           <div className="bg-white p-5 rounded-xl shadow-sm flex items-center space-x-4">
-//             <UploadCloud className="text-purple-600 w-6 h-6" />
-//             <div>
-//               <p className="text-sm text-gray-500">Files Uploaded</p>
-//               <p className="text-2xl font-bold text-gray-800">
-//                 {projects.reduce((sum, project) => sum + project.files.length, 0)}
-//               </p>
-//             </div>
-//           </div>
-//         </div>
-//       </div>
-//     </div>
-//   );
-// };
-
-// export default TeacherDashboard;
-
 'use client';
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { projectsApi } from '@/app/api/api';
 import ProjectCard from '@/app/components/projects/ProjectCardTeacher';
-import { FileText, FolderOpen, UploadCloud, CheckCircle2 } from 'lucide-react';
+import { FileText, FolderOpen, UploadCloud, CheckCircle2, Clock4, Plus } from 'lucide-react';
+import { useApprovalStatus } from '@/app/hooks/useApprovalStatus';
+import { useRouter } from 'next/navigation';
 
 interface File {
   id: number;
@@ -177,12 +19,11 @@ interface File {
 interface Submission {
   id: number;
   student_id: number;
-  phase: number; // Phase 1 or 2
+  phase: number;
   file_name: string;
   file_url: string;
   submitted_at: string;
-  final_deadline: string; // Added final deadline
-
+  final_deadline: string;
 }
 
 interface Project {
@@ -191,175 +32,176 @@ interface Project {
   description: string;
   created_at: string;
   files: File[];
-  submissions?: Submission[];  // optional but should default to []
+  submissions: Submission[];
+  final_deadline: string;
+  hasSubmittedPhase1: boolean;
+  hasSubmittedPhase2: boolean;
+  completeSubmissionCount: number;
+  state: 'active' | 'past';
+  first_deadline: string;
 }
 
 const TeacherDashboard = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
+  const { isApproved, isLoading: approvalLoading } = useApprovalStatus();
+  const router = useRouter();
 
   useEffect(() => {
-    const fetchProjects = async () => {
-      try {
-        setIsLoading(true);
-        const data = await projectsApi.getTeacherProjects();
-        console.log("Projects:", data.projects);
-
-
-        // Ensure submissions is always an array
-        const projectsWithSubs = data.projects.map((project: Project) => ({
-          ...project,
-          submissions: project.submissions || [],
-        }));
-
-        setProjects(projectsWithSubs);
-      } catch (err) {
-        setError('Failed to load projects');
-        console.error(err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchProjects();
-  }, []);
-
-  const countActiveProjects = () => {
-    const now = new Date();
-    return projects.filter(project => {
-      const isCompleted = project.hasSubmittedPhase1 && project.hasSubmittedPhase2;
-      const deadlinePassed = new Date(project.final_deadline) < now;
-      return !isCompleted && !deadlinePassed;
-    }).length;
-  };
-
-
-  // Count submissions only if both phases (1 and 2) are submitted by the student
-  const countFullySubmitted = (project: Project) => {
-    if (!project.submissions || !Array.isArray(project.submissions)) {
-      return 0;
+    if (isApproved === false) {
+      router.push('/pending-approval');
+      return;
     }
 
-    const submissionsByStudent = project.submissions.reduce<Record<number, Set<number>>>((acc, sub) => {
-      if (!acc[sub.student_id]) acc[sub.student_id] = new Set();
-      acc[sub.student_id].add(sub.phase);
-      return acc;
-    }, {});
+    if (isApproved === true) {
+      fetchProjects();
+    }
+  }, [isApproved, router]);
 
-    // Count students who have submitted both phase 1 and 2
-    return Object.values(submissionsByStudent).filter(phasesSet => phasesSet.has(1) && phasesSet.has(2)).length;
+  const fetchProjects = async () => {
+    try {
+      setIsLoading(true);
+      const data = await projectsApi.getAllProjects();
+      setProjects(data.projects || []);
+    } catch (err) {
+      setError('Failed to load projects');
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  // Count total files uploaded in all projects
+  // Filter projects by state only
+  const activeProjects = projects.filter(p => p.state === 'active' || !p.state);
+  const pastProjects = projects.filter(p => p.state === 'past');
+
+  // Count stats
+  const countActiveProjects = () => activeProjects.length;
+  const countPastProjects = () => pastProjects.length;
   const countFilesUploaded = () => projects.reduce((sum, project) => sum + project.files.length, 0);
+  const countTotalSubmissions = () => projects.reduce((sum, project) => sum + (project.completeSubmissionCount || 0), 0);
+
+  if (approvalLoading) {
+    return (
+      <div className="flex justify-center py-12">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600"></div>
+      </div>
+    );
+  }
 
   return (
-    <div>
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-semibold text-gray-800">Your Capstone Projects</h2>
+    <div className="p-6">
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold text-gray-900">Teacher Dashboard</h1>
         <Link
           href="/projects/create"
-          className="bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded-md flex items-center"
+          className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-5 w-5 mr-2"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-          >
-            <path
-              fillRule="evenodd"
-              d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
-              clipRule="evenodd"
-            />
-          </svg>
-          Create New Project
+          <Plus className="w-5 h-5" />
+          Create Project
         </Link>
       </div>
 
-      {isLoading ? (
-        <div className="flex justify-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600"></div>
-        </div>
-      ) : error ? (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-          {error}
-        </div>
-      ) : projects.length === 0 ? (
-        <div className="text-center py-12 bg-gray-50 rounded-lg">
-          <h3 className="text-xl font-medium text-gray-700 mb-2">No Projects Yet</h3>
-          <p className="text-gray-600 mb-6">
-            Get started by creating your first capstone project
-          </p>
-          <Link
-            href="/projects/create"
-            className="bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-6 rounded-md inline-flex items-center"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-5 w-5 mr-2"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-            >
-              <path
-                fillRule="evenodd"
-                d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
-                clipRule="evenodd"
-              />
-            </svg>
-            Create Project
-          </Link>
-        </div>
-      ) : (
-        <div className="space-y-8">
-          {projects.map((project) => (
-            <div key={project.id} className="border rounded-xl shadow-sm hover:shadow-md transition-all duration-300">
-              <ProjectCard project={project} />
+      {/* Quick Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+          <div className="flex items-center gap-4">
+            <div className="bg-indigo-100 p-3 rounded-lg">
+              <FolderOpen className="w-6 h-6 text-indigo-600" />
             </div>
-          ))}
-        </div>
-      )}
-
-      <div className="mt-12 bg-gray-50 rounded-lg p-6">
-        <h3 className="text-xl font-semibold mb-4 text-gray-800">Quick Stats</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
-          <div className="bg-white p-5 rounded-xl shadow-sm flex items-center space-x-4">
-            <FolderOpen className="text-indigo-600 w-6 h-6" />
-            <div>
-              <p className="text-sm text-gray-500">Total Projects</p>
-              <p className="text-2xl font-bold text-gray-800">{projects.length}</p>
-            </div>
-          </div>
-
-          <div className="bg-white p-5 rounded-xl shadow-sm flex items-center space-x-4">
-            <FileText className="text-green-600 w-6 h-6" />
-            <div>
-              <p className="text-sm text-gray-500">Total Full Submissions</p>
-              <p className="text-2xl font-bold text-gray-800">
-                {projects.reduce((sum, project) => sum + project.completeSubmissionCount, 0)}
-              </p>
-            </div>
-          </div>
-
-          <div className="bg-white p-5 rounded-xl shadow-sm flex items-center space-x-4">
-            <CheckCircle2 className="text-blue-600 w-6 h-6" />
             <div>
               <p className="text-sm text-gray-500">Active Projects</p>
-              <p className="text-2xl font-bold text-gray-800">{countActiveProjects()}</p>
+              <p className="text-2xl font-bold text-gray-900">{countActiveProjects()}</p>
             </div>
           </div>
+        </div>
 
-          <div className="bg-white p-5 rounded-xl shadow-sm flex items-center space-x-4">
-            <UploadCloud className="text-purple-600 w-6 h-6" />
+        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+          <div className="flex items-center gap-4">
+            <div className="bg-purple-100 p-3 rounded-lg">
+              <Clock4 className="w-6 h-6 text-purple-600" />
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Past Projects</p>
+              <p className="text-2xl font-bold text-gray-900">{countPastProjects()}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+          <div className="flex items-center gap-4">
+            <div className="bg-green-100 p-3 rounded-lg">
+              <CheckCircle2 className="w-6 h-6 text-green-600" />
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Total Submissions</p>
+              <p className="text-2xl font-bold text-gray-900">{countTotalSubmissions()}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+          <div className="flex items-center gap-4">
+            <div className="bg-blue-100 p-3 rounded-lg">
+              <UploadCloud className="w-6 h-6 text-blue-600" />
+            </div>
             <div>
               <p className="text-sm text-gray-500">Files Uploaded</p>
-              <p className="text-2xl font-bold text-gray-800">{countFilesUploaded()}</p>
+              <p className="text-2xl font-bold text-gray-900">{countFilesUploaded()}</p>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Active Projects */}
+      {activeProjects.length > 0 && (
+        <div className="mb-12">
+          <h2 className="text-2xl font-semibold mb-6 text-gray-800 flex items-center gap-2">
+            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+            Active Projects
+          </h2>
+          <div className="grid grid-cols-1 gap-6">
+            {activeProjects.map((project) => (
+              <div key={project.id} className="bg-white border rounded-xl shadow-sm hover:shadow-md transition-all duration-300">
+                <ProjectCard project={project} role="teacher" />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Past Projects */}
+      {pastProjects.length > 0 && (
+        <div className="mb-12">
+          <h2 className="text-2xl font-semibold mb-6 text-gray-800 flex items-center gap-2">
+            <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
+            Past Projects
+          </h2>
+          <div className="grid grid-cols-1 gap-6">
+            {pastProjects.map((project) => (
+              <div key={project.id} className="bg-white border rounded-xl shadow-sm hover:shadow-md transition-all duration-300 opacity-75">
+                <ProjectCard project={project} role="teacher" />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* No Projects Message */}
+      {projects.length === 0 && !isLoading && (
+        <div className="text-center py-12 bg-gray-50 rounded-lg">
+          <h3 className="text-xl font-medium text-gray-700 mb-2">No Projects Yet</h3>
+          <p className="text-gray-600 mb-6">Get started by creating your first capstone project</p>
+          <Link
+            href="/projects/create"
+            className="bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-6 rounded-md inline-flex items-center gap-2"
+          >
+            <Plus className="w-5 h-5" />
+            Create Project
+          </Link>
+        </div>
+      )}
     </div>
   );
 };
