@@ -6,12 +6,11 @@ import { Loader2, Upload } from "lucide-react";
 
 interface SubmissionFormProps {
     projectId: number | string;
-    phase: "phase1" | "phase2";
     onSubmissionSuccess?: () => void;
     projectState?: 'active' | 'past';
 }
 
-export default function SubmissionForm({ projectId, phase, onSubmissionSuccess, projectState }: SubmissionFormProps) {
+export default function SubmissionForm({ projectId, onSubmissionSuccess, projectState }: SubmissionFormProps) {
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [status, setStatus] = useState<{
@@ -27,7 +26,7 @@ export default function SubmissionForm({ projectId, phase, onSubmissionSuccess, 
     if (projectState === 'past') {
         return (
             <div className="border border-gray-300 rounded-lg p-6 bg-gray-50">
-                <h4 className="text-lg font-semibold mb-4">Submit Your Solution for {phase === "phase1" ? "Phase 1" : "Phase 2"}</h4>
+                <h4 className="text-lg font-semibold mb-4">Submit Your Solution</h4>
                 <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-yellow-800">
                     <p className="font-medium">This project is no longer accepting submissions</p>
                     <p className="text-sm mt-1">The project has been marked as past and is not accepting new submissions.</p>
@@ -72,11 +71,7 @@ export default function SubmissionForm({ projectId, phase, onSubmissionSuccess, 
             const formData = new FormData();
             formData.append("file", selectedFile);
 
-            if (phase === "phase1") {
-                await projectsApi.submitPhase1Solution(projectId.toString(), formData);
-            } else if (phase === "phase2") {
-                await projectsApi.submitPhase2Solution(projectId.toString(), formData);
-            }
+            await projectsApi.submitSolution(projectId.toString(), formData);
 
             setStatus({ loading: false, error: null, success: true });
             setSelectedFile(null);
@@ -91,11 +86,11 @@ export default function SubmissionForm({ projectId, phase, onSubmissionSuccess, 
 
     return (
         <div className="border border-gray-300 rounded-lg p-6 bg-gray-50">
-            <h4 className="text-lg font-semibold mb-4">Submit Your Solution for {phase === "phase1" ? "Phase 1" : "Phase 2"}</h4>
+            <h4 className="text-lg font-semibold mb-4">Submit Your Solution</h4>
 
             {!selectedFile ? (
                 <label
-                    htmlFor={`file-upload-${phase}`}
+                    htmlFor="file-upload"
                     className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-400 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
                 >
                     <Upload className="w-8 h-8 mb-3 text-gray-500" />
@@ -104,7 +99,7 @@ export default function SubmissionForm({ projectId, phase, onSubmissionSuccess, 
                     </p>
                     <p className="text-xs text-gray-400">PDF files only</p>
                     <input
-                        id={`file-upload-${phase}`}
+                        id="file-upload"
                         type="file"
                         accept=".pdf"
                         className="hidden"
