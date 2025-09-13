@@ -19,11 +19,9 @@ interface File {
 interface Submission {
     id: number;
     student_id: number;
-    phase: number;
     file_name: string;
     file_url: string;
     submitted_at: string;
-    final_deadline: string;
 }
 
 interface Project {
@@ -33,12 +31,10 @@ interface Project {
     created_at: string;
     files: File[];
     submissions: Submission[];
-    final_deadline: string;
-    hasSubmittedPhase1: boolean;
-    hasSubmittedPhase2: boolean;
-    completeSubmissionCount: number;
+    deadline: string;
+    hasSubmitted: boolean;
+    submissionCount: number;
     state: 'active' | 'past';
-    first_deadline: string;
 }
 
 const OtherRoleDashboard = () => {
@@ -80,7 +76,7 @@ const OtherRoleDashboard = () => {
     const countActiveProjects = () => activeProjects.length;
     const countPastProjects = () => pastProjects.length;
     const countFilesUploaded = () => projects.reduce((sum, project) => sum + project.files.length, 0);
-    const countTotalSubmissions = () => projects.reduce((sum, project) => sum + (project.completeSubmissionCount || 0), 0);
+    const countTotalSubmissions = () => projects.reduce((sum, project) => sum + (project.submissionCount || 0), 0);
 
     if (approvalLoading) {
         return (
