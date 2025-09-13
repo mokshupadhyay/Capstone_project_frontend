@@ -45,3 +45,7 @@ out/
 # Optional: Swings or snapshots
 *.swp
 *.swo
+
+# Ignore vendor / generated UI bundles
+public/lib/
+public/pdfjs/
