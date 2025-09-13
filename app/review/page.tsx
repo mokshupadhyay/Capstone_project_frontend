@@ -25,14 +25,10 @@ interface Submission {
     student_id: string;
     username: string;
     email: string;
-    phase1_submission_id: string;
-    phase1_file_url: string;
-    phase1_submitted_at: string;
-    phase1_review_count: number;
-    phase2_submission_id?: string | null;
-    phase2_file_url?: string | null;
-    phase2_submitted_at?: string | null;
-    phase2_review_count?: number;
+    submission_id: string;
+    file_url: string;
+    submitted_at: string;
+    review_count: number;
     status: string;
 }
 
@@ -70,7 +66,6 @@ const ReviewDashboardContent = () => {
     const { isApproved, isLoading: approvalLoading } = useApprovalStatus();
 
     const projectId = searchParams.get('projectId');
-    const phase = searchParams.get('phase');
     const [submissions, setSubmissions] = useState<Submission[]>([]);
     const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null);
     const [reviews, setReviews] = useState<Review[]>([]);
@@ -111,34 +106,27 @@ const ReviewDashboardContent = () => {
                     const studentProjects = await projectsApi.getStudentProjects();
                     const thisProject = studentProjects.projects.find((p: any) => p.id.toString() === projectId.toString());
 
-                    if (thisProject?.phase2Submission) {
+                    if (thisProject?.submission) {
                         const submission = {
                             ...thisProject,
                             student_id: user.id.toString(),
-                            phase1_review_count: thisProject.phase1Reviews?.length || 0,
-                            phase2_review_count: thisProject.phase2Reviews?.length || 0
+                            submission_id: thisProject.submission.id,
+                            file_url: thisProject.submission.file_url,
+                            submitted_at: thisProject.submission.submitted_at,
+                            review_count: thisProject.reviews?.length || 0
                         };
                         setSubmissions([submission]);
                         setSelectedSubmission(submission);
-                        setReviews(thisProject.phase2Reviews || []);
+                        setReviews(thisProject.reviews || []);
                     }
                 } else {
                     const response = await projectsApi.getSubmissionsReview(projectId);
-                    let filteredSubmissions = response.submissions;
-
-                    // Filter submissions based on phase
-                    if (phase === '1') {
-                        filteredSubmissions = filteredSubmissions.filter(s => s.phase1_submission_id);
-                    } else if (phase === '2') {
-                        filteredSubmissions = filteredSubmissions.filter(s => s.phase2_submission_id);
-                    }
-
-                    setSubmissions(filteredSubmissions);
+                    setSubmissions(response.submissions);
                     setProjectState(response.project_state);
 
                     // If there's only one submission, select it automatically
-                    if (filteredSubmissions.length === 1) {
-                        handleSelectSubmission(filteredSubmissions[0], phase === '2' ? 2 : 1);
+                    if (response.submissions.length === 1) {
+                        handleSelectSubmission(response.submissions[0]);
                     }
                 }
             } catch (err) {
@@ -150,7 +138,7 @@ const ReviewDashboardContent = () => {
         };
 
         fetchData();
-    }, [projectId, user, phase]);
+    }, [projectId, user]);
 
     const loadReviews = async (submissionId?: string) => {
         if (!submissionId) return;
@@ -167,17 +155,9 @@ const ReviewDashboardContent = () => {
         }
     };
 
-    const handleSelectSubmission = async (submission: Submission, phase: number) => {
-        const selected = {
-            ...submission,
-            phase,
-            submission_id: phase === 1 ? submission.phase1_submission_id : submission.phase2_submission_id,
-            file_url: phase === 1 ? submission.phase1_file_url : submission.phase2_file_url,
-            submitted_at: phase === 1 ? submission.phase1_submitted_at : submission.phase2_submitted_at
-        };
-
-        setSelectedSubmission(selected);
-        await loadReviews(selected.submission_id || undefined);
+    const handleSelectSubmission = async (submission: Submission) => {
+        setSelectedSubmission(submission);
+        await loadReviews(submission.submission_id);
     };
 
     const handleSubmitReview = async (e: React.FormEvent) => {
@@ -194,7 +174,6 @@ const ReviewDashboardContent = () => {
 
             setRating(7);
             setComments('');
-            // Update submissions state...
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : 'Failed to submit review';
             setReviewError(errorMessage);
@@ -245,8 +224,6 @@ const ReviewDashboardContent = () => {
             setEditingReview(null);
             setEditRating(7);
             setEditComments('');
-
-            // Show success message or notification here if needed
         } catch (err) {
             console.error('Error updating review:', err);
             setError(err instanceof Error ? err.message : 'Failed to update review');
@@ -268,13 +245,12 @@ const ReviewDashboardContent = () => {
 
             // Update submission review count if needed
             if (selectedSubmission) {
-                const phase = selectedSubmission.phase;
                 setSubmissions(prev =>
                     prev.map(sub =>
                         sub.student_id === selectedSubmission.student_id
                             ? {
                                 ...sub,
-                                [`phase${phase}_review_count`]: Math.max(0, sub[`phase${phase}_review_count`] - 1)
+                                review_count: Math.max(0, sub.review_count - 1)
                             }
                             : sub
                     )
@@ -291,7 +267,6 @@ const ReviewDashboardContent = () => {
     const handlePreview = (fileUrl: string, fileName: string) => {
         // Get the file extension
         const extension = fileName.split('.').pop()?.toLowerCase() || '';
-        console.log('Opening file:', fileName, 'with extension:', extension); // Debug log
 
         // Reset all type flags
         setIsImage(false);
@@ -303,10 +278,8 @@ const ReviewDashboardContent = () => {
 
         // Set appropriate flag based on extension
         if (['txt', 'md', 'text'].includes(extension)) {
-            console.log('Setting as text file'); // Debug log
             setIsTxt(true);
         } else if (['js', 'jsx', 'ts', 'tsx', 'json', 'html', 'css', 'py', 'java', 'cpp', 'c', 'rb', 'php', 'sql'].includes(extension)) {
-            console.log('Setting as code file'); // Debug log
             setIsCode(true);
         } else if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(extension)) {
             setIsImage(true);
@@ -323,25 +296,6 @@ const ReviewDashboardContent = () => {
             file_url: fileUrl,
             file_type: extension
         });
-    };
-
-    const getFileTypeFromName = (fileName: string) => {
-        const extension = fileName.split('.').pop()?.toLowerCase() || '';
-
-        if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(extension)) {
-            return 'image';
-        } else if (extension === 'pdf') {
-            return 'pdf';
-        } else if (extension === 'zip' || extension === 'rar') {
-            return 'zip';
-        } else if (extension === 'csv' || extension === 'xlsx' || extension === 'xls') {
-            return 'spreadsheet';
-        } else if (extension === 'txt' || extension === 'md') {
-            return 'text';
-        } else if (['js', 'jsx', 'ts', 'tsx', 'json', 'html', 'css', 'py'].includes(extension)) {
-            return 'code';
-        }
-        return 'unknown';
     };
 
     if (approvalLoading) {
@@ -487,51 +441,26 @@ const ReviewDashboardContent = () => {
                                 ) : (
                                     <ul className={`${selectedPdf ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4' : 'space-y-2'}`}>
                                         {submissions.map((submission) => (
-                                            <div key={submission.student_id} className="space-y-2">
-                                                <li
-                                                    className={`p-3 rounded-md cursor-pointer border ${selectedSubmission?.phase === 1 &&
-                                                        selectedSubmission?.student_id === submission.student_id
-                                                        ? 'bg-blue-100 border-blue-300'
-                                                        : 'hover:bg-gray-100 border-gray-200'
-                                                        }`}
-                                                    onClick={() => handleSelectSubmission(submission, 1)}
-                                                >
-                                                    <div className="flex flex-col space-y-2">
-                                                        <div className="font-medium text-sm sm:text-base break-words">{submission.username} - Phase 1</div>
-                                                        <div className="flex flex-wrap items-center gap-2">
-                                                            <span className={`px-2 py-1 text-xs rounded inline-flex items-center ${submission.phase1_review_count > 0
-                                                                ? 'bg-green-100 text-green-800'
-                                                                : 'bg-yellow-100 text-yellow-800'
-                                                                }`}>
-                                                                {submission.phase1_review_count} Review(s)
-                                                            </span>
-                                                        </div>
+                                            <li
+                                                key={submission.student_id}
+                                                className={`p-3 rounded-md cursor-pointer border ${selectedSubmission?.student_id === submission.student_id
+                                                    ? 'bg-blue-100 border-blue-300'
+                                                    : 'hover:bg-gray-100 border-gray-200'
+                                                    }`}
+                                                onClick={() => handleSelectSubmission(submission)}
+                                            >
+                                                <div className="flex flex-col space-y-2">
+                                                    <div className="font-medium text-sm sm:text-base break-words">{submission.username}</div>
+                                                    <div className="flex flex-wrap items-center gap-2">
+                                                        <span className={`px-2 py-1 text-xs rounded inline-flex items-center ${submission.review_count > 0
+                                                            ? 'bg-green-100 text-green-800'
+                                                            : 'bg-yellow-100 text-yellow-800'
+                                                            }`}>
+                                                            {submission.review_count} Review(s)
+                                                        </span>
                                                     </div>
-                                                </li>
-
-                                                {submission.phase2_submission_id && (
-                                                    <li
-                                                        className={`p-3 rounded-md cursor-pointer border ${selectedSubmission?.phase === 2 &&
-                                                            selectedSubmission?.student_id === submission.student_id
-                                                            ? 'bg-blue-100 border-blue-300'
-                                                            : 'hover:bg-gray-100 border-gray-200'
-                                                            }`}
-                                                        onClick={() => handleSelectSubmission(submission, 2)}
-                                                    >
-                                                        <div className="flex flex-col space-y-2">
-                                                            <div className="font-medium text-sm sm:text-base break-words">{submission.username} - Phase 2</div>
-                                                            <div className="flex flex-wrap items-center gap-2">
-                                                                <span className={`px-2 py-1 text-xs rounded inline-flex items-center ${(submission.phase2_review_count || 0) > 0
-                                                                    ? 'bg-green-100 text-green-800'
-                                                                    : 'bg-yellow-100 text-yellow-800'
-                                                                    }`}>
-                                                                    {submission.phase2_review_count || 0} Review(s)
-                                                                </span>
-                                                            </div>
-                                                        </div>
-                                                    </li>
-                                                )}
-                                            </div>
+                                                </div>
+                                            </li>
                                         ))}
                                     </ul>
                                 )}
@@ -547,45 +476,19 @@ const ReviewDashboardContent = () => {
                                             {isStudent ? "Your Submission" : `${selectedSubmission.username}'s Submission`}
                                         </h2>
 
-                                        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 min-w-[280px]">
+                                        <div className="mt-4">
                                             <div className="border rounded-md p-3">
-                                                <h3 className="font-medium">Phase 1 Submission</h3>
+                                                <h3 className="font-medium">Submission Details</h3>
                                                 <p className="text-sm text-gray-500">
-                                                    {selectedSubmission.phase1_submitted_at
-                                                        ? new Date(selectedSubmission.phase1_submitted_at).toLocaleString()
-                                                        : 'Not submitted'}
+                                                    Submitted: {new Date(selectedSubmission.submitted_at).toLocaleString()}
                                                 </p>
-                                                {selectedSubmission.phase1_file_url && (
-                                                    <button
-                                                        onClick={() => handlePreview(selectedSubmission.phase1_file_url, `Submission_${selectedSubmission.username}_Phase1.pdf`)}
-                                                        className="mt-2 flex items-center gap-2 px-3 py-2 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 rounded-md transition-colors text-sm w-full sm:w-fit min-w-[140px]"
-                                                    >
-                                                        <Eye size={14} className="sm:w-4 sm:h-4" />
-                                                        <span>View Submission</span>
-                                                    </button>
-                                                )}
-                                            </div>
-
-                                            <div className="border rounded-md p-3">
-                                                <h3 className="font-medium">Phase 2 Submission</h3>
-                                                {selectedSubmission.phase2_submitted_at ? (
-                                                    <>
-                                                        <p className="text-sm text-gray-500">
-                                                            {new Date(selectedSubmission.phase2_submitted_at).toLocaleString()}
-                                                        </p>
-                                                        {selectedSubmission.phase2_file_url && (
-                                                            <button
-                                                                onClick={() => handlePreview(selectedSubmission.phase2_file_url, `Submission_${selectedSubmission.username}_Phase2.pdf`)}
-                                                                className="mt-2 flex items-center gap-2 px-3 py-2 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 rounded-md transition-colors text-sm w-full sm:w-fit min-w-[140px]"
-                                                            >
-                                                                <Eye size={14} className="sm:w-4 sm:h-4" />
-                                                                <span>View Submission</span>
-                                                            </button>
-                                                        )}
-                                                    </>
-                                                ) : (
-                                                    <p className="text-sm text-gray-500">Not submitted</p>
-                                                )}
+                                                <button
+                                                    onClick={() => handlePreview(selectedSubmission.file_url, `Submission_${selectedSubmission.username}.pdf`)}
+                                                    className="mt-2 flex items-center gap-2 px-3 py-2 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 rounded-md transition-colors text-sm w-full sm:w-fit min-w-[140px]"
+                                                >
+                                                    <Eye size={14} className="sm:w-4 sm:h-4" />
+                                                    <span>View Submission</span>
+                                                </button>
                                             </div>
                                         </div>
                                     </div>
@@ -721,7 +624,7 @@ const ReviewDashboardContent = () => {
                                     {canReview && selectedSubmission && (
                                         <div className="mt-8 border-t pt-6">
                                             <h3 className="text-xl font-semibold mb-4">
-                                                Submit Review for Phase {selectedSubmission.phase}
+                                                Submit Review
                                             </h3>
 
                                             {reviewError && (
@@ -770,7 +673,7 @@ const ReviewDashboardContent = () => {
                                                             <span>Submitting...</span>
                                                         </>
                                                     ) : (
-                                                        <span>Submit Phase {selectedSubmission.phase} Review</span>
+                                                        <span>Submit Review</span>
                                                     )}
                                                 </button>
                                             </form>
