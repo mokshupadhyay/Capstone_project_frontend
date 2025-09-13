@@ -52,7 +52,6 @@ interface Submission {
     file_name: string;
     file_url: string;
     submitted_at: string;
-    phase: number;
 }
 
 interface File {
@@ -69,10 +68,8 @@ interface Project {
     description: string;
     created_at: string;
     files: File[];
-    hasSubmittedPhase1: boolean;
-    hasSubmittedPhase2: boolean;
-    phase1Submission?: Submission;
-    phase2Submission?: Submission;
+    hasSubmitted: boolean;
+    submission?: Submission;
 }
 interface ProjectCardProps {
     project: Project;
@@ -91,22 +88,12 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
 
     const createdDate = formatDate(project.created_at);
 
-    const phase1 = project.phase1Submission;
-    const phase2 = project.phase2Submission;
+    const submission = project.submission;
 
-    // Determine latest submission
-    const latestSubmission = [phase1, phase2].reduce((latest, current) => {
-        if (!current) return latest;
-        if (!latest) return current;
-        return new Date(current.submitted_at) > new Date(latest.submitted_at)
-            ? current
-            : latest;
-    }, null as Submission | null);
-
-    // Check if both phases are completed
-    const isCompleted = project.hasSubmittedPhase1 && project.hasSubmittedPhase2;
-    const submittedDate = latestSubmission
-        ? formatDate(latestSubmission.submitted_at)
+    // Check if submission is completed
+    const isCompleted = project.hasSubmitted;
+    const submittedDate = submission
+        ? formatDate(submission.submitted_at)
         : null;
 
     return (
@@ -127,11 +114,11 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
                                 <span>Created: {createdDate}</span>
                             </div>
 
-                            {latestSubmission && submittedDate && (
+                            {submission && submittedDate && (
                                 <div className="flex items-center text-sm text-green-600">
                                     <CheckCircle2 className="h-4 w-4 mr-1" />
                                     <span>
-                                        Submitted: {submittedDate} (Phase {latestSubmission.phase})
+                                        Submitted: {submittedDate}
                                     </span>
                                 </div>
                             )}
