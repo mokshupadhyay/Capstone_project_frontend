@@ -49,9 +49,9 @@ interface Submission {
     file_url: string;
     submitted_at: string;
     username: string;
-    phase: number;
     student_id?: string;
     file_type: string;
+    status?: string;
 }
 
 interface Project {
@@ -60,16 +60,11 @@ interface Project {
     description: string;
     created_at: string;
     files: File[];
-    phase1Submissions?: Submission[];
-    phase2Submissions?: Submission[];
-    first_deadline?: string;
-    final_deadline?: string;
-    phase1Submission?: Submission | null;
-    phase2Submission?: Submission | null;
-    phase1DeadlinePassed?: boolean;
-    phase2DeadlinePassed?: boolean;
+    submissions?: Submission[];
+    deadline?: string;
+    submission?: Submission | null;
+    deadlinePassed?: boolean;
     reviews?: Array<{
-        submission_phase: number;
         student_id: string;
         rating?: number;
         comments?: string;
@@ -106,20 +101,15 @@ interface DeadlineEditProps {
 const DeadlineEdit: React.FC<DeadlineEditProps> = ({ project, onUpdate }) => {
     const { user } = useAuth();
     const [isEditing, setIsEditing] = useState(false);
-    const [firstDeadline, setFirstDeadline] = useState('');
-    const [finalDeadline, setFinalDeadline] = useState('');
+    const [deadline, setDeadline] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
 
-    // Initialize deadlines when component mounts or project changes
+    // Initialize deadline when component mounts or project changes
     useEffect(() => {
-        if (project.first_deadline) {
-            const firstDate = new Date(project.first_deadline);
-            setFirstDeadline(firstDate.toISOString().slice(0, 16));
-        }
-        if (project.final_deadline) {
-            const finalDate = new Date(project.final_deadline);
-            setFinalDeadline(finalDate.toISOString().slice(0, 16));
+        if (project.deadline) {
+            const deadlineDate = new Date(project.deadline);
+            setDeadline(deadlineDate.toISOString().slice(0, 16));
         }
     }, [project]);
 
@@ -130,28 +120,26 @@ const DeadlineEdit: React.FC<DeadlineEditProps> = ({ project, onUpdate }) => {
             setError(null);
             setLoading(true);
 
-            if (!firstDeadline || !finalDeadline) {
-                setError('Both deadlines are required');
+            if (!deadline) {
+                setError('Deadline is required');
                 return;
             }
 
-            // Convert to Date objects for validation
-            const firstDate = new Date(firstDeadline);
-            const finalDate = new Date(finalDeadline);
+            // Convert to Date object for validation
+            const deadlineDate = new Date(deadline);
 
-            if (isNaN(firstDate.getTime()) || isNaN(finalDate.getTime())) {
+            if (isNaN(deadlineDate.getTime())) {
                 setError('Invalid date format');
                 return;
             }
 
-            if (firstDate >= finalDate) {
-                setError('First deadline must be before final deadline');
+            if (deadlineDate <= new Date()) {
+                setError('Deadline must be in the future');
                 return;
             }
 
-            await projectsApi.updateProjectDeadlines(project.id.toString(), {
-                firstDeadline: firstDate.toISOString(),
-                finalDeadline: finalDate.toISOString()
+            await projectsApi.updateProjectDeadline(project.id.toString(), {
+                deadline: deadlineDate.toISOString()
             });
 
             setIsEditing(false);
@@ -180,31 +168,17 @@ const DeadlineEdit: React.FC<DeadlineEditProps> = ({ project, onUpdate }) => {
                 </button>
             ) : (
                 <div className="space-y-4 bg-white border border-gray-200 rounded-lg p-4">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Phase 1 Deadline
-                            </label>
-                            <input
-                                type="datetime-local"
-                                value={firstDeadline}
-                                onChange={(e) => setFirstDeadline(e.target.value)}
-                                className="w-full border rounded-md px-3 py-2 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
-                                required
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Final Deadline
-                            </label>
-                            <input
-                                type="datetime-local"
-                                value={finalDeadline}
-                                onChange={(e) => setFinalDeadline(e.target.value)}
-                                className="w-full border rounded-md px-3 py-2 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
-                                required
-                            />
-                        </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Project Deadline
+                        </label>
+                        <input
+                            type="datetime-local"
+                            value={deadline}
+                            onChange={(e) => setDeadline(e.target.value)}
+                            className="w-full border rounded-md px-3 py-2 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
+                            required
+                        />
                     </div>
                     {error && (
                         <div className="text-sm text-red-600">{error}</div>
@@ -251,10 +225,7 @@ const ProjectState: React.FC<ProjectStateProps> = ({ project, onUpdate }) => {
     const [isUpdating, setIsUpdating] = useState(false);
     const [showDeadlineModal, setShowDeadlineModal] = useState(false);
     const [showConfirmModal, setShowConfirmModal] = useState(false);
-    const [newDeadlines, setNewDeadlines] = useState({
-        firstDeadline: '',
-        finalDeadline: ''
-    });
+    const [newDeadline, setNewDeadline] = useState('');
 
     const canManageState = user && ['teacher', 'academic_team', 'coordinator', 'admin'].includes(user.role);
 
@@ -268,12 +239,11 @@ const ProjectState: React.FC<ProjectStateProps> = ({ project, onUpdate }) => {
                 setIsUpdating(false);
                 return;
             } else if (newState === 'active') {
-                // If current state is past or deadlines have passed, we need new deadlines
+                // If current state is past or deadline has passed, we need new deadline
                 const currentDate = new Date();
-                const firstDeadlinePassed = project.first_deadline && new Date(project.first_deadline) < currentDate;
-                const finalDeadlinePassed = project.final_deadline && new Date(project.final_deadline) < currentDate;
+                const deadlinePassed = project.deadline && new Date(project.deadline) < currentDate;
 
-                if (project.state === 'past' || firstDeadlinePassed || finalDeadlinePassed) {
+                if (project.state === 'past' || deadlinePassed) {
                     setShowDeadlineModal(true);
                 } else {
                     await projectsApi.updateProjectState(project.id.toString(), {
@@ -310,39 +280,27 @@ const ProjectState: React.FC<ProjectStateProps> = ({ project, onUpdate }) => {
 
     const handleDeadlineSubmit = async () => {
         try {
-            // Parse dates for validation
-            const firstDate = new Date(newDeadlines.firstDeadline);
-            const finalDate = new Date(newDeadlines.finalDeadline);
+            // Parse date for validation
+            const deadlineDate = new Date(newDeadline);
             const now = new Date();
 
-            // Validate dates
-            if (isNaN(firstDate.getTime()) || isNaN(finalDate.getTime())) {
-                toast.error('Please enter valid dates');
+            // Validate date
+            if (isNaN(deadlineDate.getTime())) {
+                toast.error('Please enter a valid date');
                 return;
             }
 
-            if (firstDate >= finalDate) {
-                toast.error('First deadline must be before final deadline');
-                return;
-            }
-
-            if (firstDate <= now) {
-                toast.error('First deadline must be in the future');
-                return;
-            }
-
-            if (finalDate <= now) {
-                toast.error('Final deadline must be in the future');
+            if (deadlineDate <= now) {
+                toast.error('Deadline must be in the future');
                 return;
             }
 
             setIsUpdating(true);
             await projectsApi.updateProjectState(project.id.toString(), {
                 state: 'active',
-                firstDeadline: newDeadlines.firstDeadline,
-                finalDeadline: newDeadlines.finalDeadline
+                deadline: newDeadline
             });
-            toast.success('Project activated with new deadlines');
+            toast.success('Project activated with new deadline');
             setShowDeadlineModal(false);
             onUpdate();
         } catch (error) {
@@ -468,39 +426,20 @@ const ProjectState: React.FC<ProjectStateProps> = ({ project, onUpdate }) => {
                             <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
                                 <CalendarDays className="w-6 h-6 text-green-600" />
                             </div>
-                            <h3 className="text-xl font-semibold text-gray-900">Set New Deadlines</h3>
+                            <h3 className="text-xl font-semibold text-gray-900">Set New Deadline</h3>
                         </div>
                         <div className="space-y-6">
                             <div className="bg-green-50 rounded-lg p-4">
-                                <div className="space-y-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            First Phase Deadline
-                                        </label>
-                                        <input
-                                            type="datetime-local"
-                                            className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 bg-white"
-                                            value={newDeadlines.firstDeadline}
-                                            onChange={(e) => setNewDeadlines(prev => ({
-                                                ...prev,
-                                                firstDeadline: e.target.value
-                                            }))}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Final Phase Deadline
-                                        </label>
-                                        <input
-                                            type="datetime-local"
-                                            className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 bg-white"
-                                            value={newDeadlines.finalDeadline}
-                                            onChange={(e) => setNewDeadlines(prev => ({
-                                                ...prev,
-                                                finalDeadline: e.target.value
-                                            }))}
-                                        />
-                                    </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                                        Project Deadline
+                                    </label>
+                                    <input
+                                        type="datetime-local"
+                                        className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 bg-white"
+                                        value={newDeadline}
+                                        onChange={(e) => setNewDeadline(e.target.value)}
+                                    />
                                 </div>
                             </div>
                         </div>
@@ -514,7 +453,7 @@ const ProjectState: React.FC<ProjectStateProps> = ({ project, onUpdate }) => {
                             <button
                                 onClick={handleDeadlineSubmit}
                                 className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium transition-colors shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center min-w-[140px]"
-                                disabled={!newDeadlines.firstDeadline || !newDeadlines.finalDeadline || isUpdating}
+                                disabled={!newDeadline || isUpdating}
                             >
                                 {isUpdating ? (
                                     <div className="flex items-center gap-2">
@@ -793,11 +732,9 @@ export default function ProjectDetailsPage() {
     };
 
     // Add these handler functions in the component
-    const handleDownloadAllSubmissions = async (phase: 'phase1' | 'phase2') => {
+    const handleDownloadAllSubmissions = async () => {
         try {
-            const submissions = phase === 'phase1'
-                ? project?.phase1Submissions
-                : project?.phase2Submissions;
+            const submissions = project?.submissions;
 
             if (!submissions || submissions.length === 0) {
                 alert('No submissions to download');
@@ -805,7 +742,7 @@ export default function ProjectDetailsPage() {
             }
 
             const zip = new JSZip();
-            const folder = zip.folder(`${project?.title}_${phase}_submissions`);
+            const folder = zip.folder(`${project?.title}_submissions`);
 
             for (const submission of submissions) {
                 const response = await fetch(submission.file_url);
@@ -814,7 +751,7 @@ export default function ProjectDetailsPage() {
             }
 
             const content = await zip.generateAsync({ type: 'blob' });
-            saveAs(content, `${project?.title}_${phase}_submissions.zip`);
+            saveAs(content, `${project?.title}_submissions.zip`);
         } catch (error) {
             console.error('Error downloading submissions:', error);
             alert('Failed to download submissions');
@@ -823,11 +760,9 @@ export default function ProjectDetailsPage() {
 
 
 
-    const generatePhaseCSVContent = (project: Project, phase: 'phase1' | 'phase2') => {
-        const isPhase1 = phase === 'phase1';
-        const phaseNumber = isPhase1 ? 1 : 2;
-        const submissions = isPhase1 ? project.phase1Submissions : project.phase2Submissions;
-        const phaseDeadline = isPhase1 ? project.first_deadline : project.final_deadline;
+    const generateCSVContent = (project: Project) => {
+        const submissions = project.submissions;
+        const deadline = project.deadline;
 
         const headers = [
             'Project ID',
@@ -835,30 +770,29 @@ export default function ProjectDetailsPage() {
             'Project Description',
             'Project State',
             'Created At',
-            `${isPhase1 ? 'First' : 'Final'} Phase Deadline`,
+            'Deadline',
             'Student ID',
             'Student Name',
             'Student Email',
-            `Phase ${phaseNumber} Submission Date`,
-            `Phase ${phaseNumber} File Name`,
-            `Phase ${phaseNumber} File URL`,
+            'Submission Date',
+            'File Name',
+            'File URL',
             'Submission Status',
             'Deadline Status',
-            `Phase ${phaseNumber} Rating`,
-            `Phase ${phaseNumber} Comments`,
-            `Phase ${phaseNumber} Reviewer Name`,
+            'Rating',
+            'Comments',
+            'Reviewer Name',
             'Review Status',
             'Last Updated'
         ];
 
         const rows = submissions?.map(submission => {
             const review = project.reviews?.find(r =>
-                r.submission_phase === phaseNumber &&
                 r.student_id === submission.student_id
             );
 
             const submissionDate = new Date(submission.submitted_at);
-            const deadlineDate = phaseDeadline ? new Date(phaseDeadline) : null;
+            const deadlineDate = deadline ? new Date(deadline) : null;
             const isLate = deadlineDate ? submissionDate > deadlineDate : false;
 
             return [
@@ -867,15 +801,15 @@ export default function ProjectDetailsPage() {
                 project.description.substring(0, 100) + '...',  // Truncate description
                 project.state || 'active',
                 formatDate(project.created_at),
-                formatDate(phaseDeadline || ''),
+                formatDate(deadline || ''),
                 submission.student_id || 'N/A',
                 submission.username,
                 submission.username + '@university.edu',  // Example email format
                 formatDate(submission.submitted_at),
                 submission.file_name,
                 submission.file_url,
+                submission.status,
                 isLate ? 'Late Submission' : 'On Time',
-                deadlineDate ? (isLate ? 'Past Deadline' : 'Within Deadline') : 'No Deadline Set',
                 review?.rating?.toString() || 'Pending',
                 review?.comments?.replace(/\n/g, ' ').replace(/,/g, ';') || 'No Comments',
                 review?.reviewer_name || 'Not Reviewed',
@@ -888,10 +822,10 @@ export default function ProjectDetailsPage() {
         const summaryRow = [
             'SUMMARY',
             `Total Submissions: ${submissions?.length || 0}`,
-            `On-Time: ${submissions?.filter(s => new Date(s.submitted_at) <= (phaseDeadline ? new Date(phaseDeadline) : new Date())).length || 0}`,
-            `Late: ${submissions?.filter(s => new Date(s.submitted_at) > (phaseDeadline ? new Date(phaseDeadline) : new Date())).length || 0}`,
-            `Reviewed: ${project.reviews?.filter(r => r.submission_phase === phaseNumber).length || 0}`,
-            `Pending Review: ${(submissions?.length || 0) - (project.reviews?.filter(r => r.submission_phase === phaseNumber).length || 0)}`,
+            `On-Time: ${submissions?.filter(s => new Date(s.submitted_at) <= (deadline ? new Date(deadline) : new Date())).length || 0}`,
+            `Late: ${submissions?.filter(s => new Date(s.submitted_at) > (deadline ? new Date(deadline) : new Date())).length || 0}`,
+            `Reviewed: ${project.reviews?.length || 0}`,
+            `Pending Review: ${(submissions?.length || 0) - (project.reviews?.length || 0)}`,
             ...Array(13).fill('')  // Fill remaining columns
         ];
 
@@ -899,9 +833,8 @@ export default function ProjectDetailsPage() {
         const metadataRow = [
             'METADATA',
             `Generated On: ${formatDate(new Date().toISOString())}`,
-            `Phase: ${phaseNumber}`,
             `Project Status: ${project.state || 'active'}`,
-            ...Array(15).fill('')  // Fill remaining columns
+            ...Array(16).fill('')  // Fill remaining columns
         ];
 
         return [metadataRow, [], headers, ...rows, [], summaryRow]
@@ -913,18 +846,11 @@ export default function ProjectDetailsPage() {
             .join('\n');
     };
 
-    // Separate handlers for each phase
-    const handleGeneratePhase1CSV = () => {
+    // CSV generation handler
+    const handleGenerateCSV = () => {
         if (!project) return;
-        const csvContent = generatePhaseCSVContent(project, 'phase1');
-        const filename = `${project.title}_phase1_report.csv`;
-        downloadCSV(csvContent, filename);
-    };
-
-    const handleGeneratePhase2CSV = () => {
-        if (!project) return;
-        const csvContent = generatePhaseCSVContent(project, 'phase2');
-        const filename = `${project.title}_phase2_report.csv`;
+        const csvContent = generateCSVContent(project);
+        const filename = `${project.title}_submissions_report.csv`;
         downloadCSV(csvContent, filename);
     };
 
@@ -1024,16 +950,10 @@ export default function ProjectDetailsPage() {
 
                             {/* Deadline Badges */}
                             <div className="flex flex-col sm:flex-row justify-center gap-2 sm:gap-4 mt-3 px-2">
-                                {project.first_deadline && (
+                                {project.deadline && (
                                     <div className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-indigo-100 text-indigo-700 font-medium text-xs sm:text-sm rounded-full shadow-sm border border-indigo-300">
-                                        <Hourglass className="w-3 h-3 sm:w-4 sm:h-4" />
-                                        <span className="whitespace-nowrap">Phase 1: {formatDate(project.first_deadline)}</span>
-                                    </div>
-                                )}
-                                {project.final_deadline && (
-                                    <div className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-rose-100 text-rose-700 font-medium text-xs sm:text-sm rounded-full shadow-sm border border-rose-300">
                                         <AlarmClock className="w-3 h-3 sm:w-4 sm:h-4" />
-                                        <span className="whitespace-nowrap">Phase 2: {formatDate(project.final_deadline)}</span>
+                                        <span className="whitespace-nowrap">Deadline: {formatDate(project.deadline)}</span>
                                     </div>
                                 )}
                             </div>
@@ -1406,10 +1326,10 @@ export default function ProjectDetailsPage() {
 
                             {/* Phase 1 Submissions */}
                             <div className="mb-6 sm:mb-10 border border-gray-200 rounded-lg bg-white p-4 sm:p-6 shadow-sm">
-                                <h3 className="text-lg sm:text-xl font-semibold mb-4">Phase 1 Submissions</h3>
+                                <h3 className="text-lg sm:text-xl font-semibold mb-4">Submissions</h3>
 
-                                {/* Phase 1 Submission */}
-                                {user?.role === "student" && project.phase1Submission ? (
+                                {/* Student Submission */}
+                                {user?.role === "student" && project.submission ? (
                                     <div className="grid gap-4">
                                         <div className="flex flex-col sm:flex-row sm:items-center justify-between border border-gray-300 rounded-lg p-3 sm:p-4 hover:bg-gray-50 transition-colors space-y-3 sm:space-y-0">
                                             <div className="flex items-center space-x-3 sm:space-x-4 flex-1 min-w-0">
@@ -1422,17 +1342,17 @@ export default function ProjectDetailsPage() {
                                                     />
                                                 </div>
                                                 <div className="flex-1 min-w-0">
-                                                    <p className="font-semibold text-gray-900 truncate text-sm sm:text-base" title={project.phase1Submission.file_name}>
-                                                        {project.phase1Submission.file_name}
+                                                    <p className="font-semibold text-gray-900 truncate text-sm sm:text-base" title={project.submission.file_name}>
+                                                        {project.submission.file_name}
                                                     </p>
                                                     <p className="text-xs sm:text-sm text-gray-500">
-                                                        Submitted on {formatDate(project.phase1Submission.submitted_at)}
+                                                        Submitted on {formatDate(project.submission.submitted_at)}
                                                     </p>
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 <button
-                                                    onClick={() => handleSubmissionPreview(project.phase1Submission)}
+                                                    onClick={() => handleSubmissionPreview(project.submission)}
                                                     className="flex items-center gap-2 px-3 py-2 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 rounded-md transition-colors text-sm"
                                                     title="Preview"
                                                 >
@@ -1440,7 +1360,7 @@ export default function ProjectDetailsPage() {
                                                     <span>Preview</span>
                                                 </button>
                                                 <Link
-                                                    href={project.phase1Submission.file_url}
+                                                    href={project.submission.file_url}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
                                                     className="flex items-center px-3 py-2 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 rounded-md transition-colors text-sm"
@@ -1453,9 +1373,9 @@ export default function ProjectDetailsPage() {
                                     </div>
                                 ) : (
                                     <>
-                                        {project.phase1Submissions && project.phase1Submissions.length > 0 ? (
+                                        {project.submissions && project.submissions.length > 0 ? (
                                             <div className="grid gap-4">
-                                                {project.phase1Submissions.map((submission) => (
+                                                {project.submissions.map((submission) => (
                                                     <div key={submission.id} className="flex flex-col sm:flex-row sm:items-center justify-between border border-gray-300 rounded-lg p-3 sm:p-4 hover:bg-gray-50 transition-colors space-y-3 sm:space-y-0">
                                                         <div className="flex items-center space-x-3 sm:space-x-4 flex-1 min-w-0">
                                                             <div className="relative w-10 h-12 sm:w-12 sm:h-16 flex-shrink-0 rounded-md border border-gray-200 bg-gray-50 overflow-hidden">
@@ -1503,17 +1423,17 @@ export default function ProjectDetailsPage() {
                                                     {['teacher', 'academic_team', 'admin'].includes(user?.role || '') && (
                                                         <div className="flex gap-2">
                                                             <button
-                                                                onClick={() => handleDownloadAllSubmissions('phase1')}
+                                                                onClick={() => handleDownloadAllSubmissions()}
                                                                 className="px-3 py-1 bg-indigo-600 text-white rounded-md text-sm hover:bg-indigo-700 flex items-center gap-1"
-                                                                disabled={!project?.phase1Submissions?.length}
+                                                                disabled={!project?.submissions?.length}
                                                             >
                                                                 <Download size={16} />
                                                                 <span>Download All</span>
                                                             </button>
                                                             <button
-                                                                onClick={() => handleGeneratePhase1CSV()}
+                                                                onClick={() => handleGenerateCSV()}
                                                                 className="px-3 py-1 bg-green-600 text-white rounded-md text-sm hover:bg-green-700 flex items-center gap-1"
-                                                                disabled={!project?.phase1Submissions?.length}
+                                                                disabled={!project?.submissions?.length}
                                                             >
                                                                 <FileSpreadsheet size={16} />
                                                                 <span>Generate CSV</span>
@@ -1523,17 +1443,16 @@ export default function ProjectDetailsPage() {
                                                 </div>
                                             </div>
                                         ) : (
-                                            <p className="text-gray-600 text-sm sm:text-base">No submissions for Phase 1 yet.</p>
+                                            <p className="text-gray-600 text-sm sm:text-base">No submissions yet.</p>
                                         )}
                                     </>
                                 )}
 
-                                {/* Phase 1 Submission Form */}
-                                {user?.role === "student" && !project.phase1Submission && !project.phase1DeadlinePassed && (
+                                {/* Submission Form */}
+                                {user?.role === "student" && !project.submission && !project.deadlinePassed && (
                                     <div className="mt-4 sm:mt-6">
                                         <SubmissionForm
                                             projectId={project.id}
-                                            phase="phase1"
                                             projectState={project.state}
                                             onSubmissionSuccess={async () => {
                                                 const updated = await projectsApi.getProject(projectId as string);
@@ -1544,180 +1463,20 @@ export default function ProjectDetailsPage() {
                                 )}
 
                                 {/* Message if student already submitted */}
-                                {user?.role === "student" && !!project.phase1Submission && (
+                                {user?.role === "student" && !!project.submission && (
                                     <p className="mt-4 text-green-700 font-medium text-sm sm:text-base">
-                                        You have already submitted for Phase 1.
+                                        You have already submitted your solution.
                                     </p>
                                 )}
 
                                 {/* Message if deadline has passed */}
-                                {user?.role === "student" && !project.phase1Submission && project.phase1DeadlinePassed && (
+                                {user?.role === "student" && !project.submission && project.deadlinePassed && (
                                     <p className="mt-4 text-red-600 font-medium text-sm sm:text-base">
-                                        The deadline for Phase 1 has passed.
-                                    </p>
-                                )}
-                            </div>
-
-                            {/* Phase 2 Submissions */}
-                            <div className="mb-6 sm:mb-10 border border-gray-200 rounded-lg bg-white p-4 sm:p-6 shadow-sm">
-                                <h3 className="text-lg sm:text-xl font-semibold mb-4">Phase 2 Submissions</h3>
-
-                                {/* Phase 2 Submission */}
-                                {project.phase2Submission ? (
-                                    <div className="grid gap-4">
-                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between border border-gray-300 rounded-lg p-3 sm:p-4 hover:bg-gray-50 transition-colors space-y-3 sm:space-y-0">
-                                            <div className="flex items-center space-x-3 sm:space-x-4 flex-1 min-w-0">
-                                                <div className="relative w-10 h-12 sm:w-12 sm:h-16 flex-shrink-0 rounded-md border border-gray-200 bg-gray-50 overflow-hidden">
-                                                    <Image
-                                                        src={pdf}
-                                                        alt="Submission PDF"
-                                                        fill
-                                                        className="object-contain p-1"
-                                                    />
-                                                </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <p className="font-semibold text-gray-900 truncate text-sm sm:text-base">
-                                                        {project.phase2Submission.file_name}
-                                                    </p>
-                                                    <p className="text-xs sm:text-sm text-gray-500">
-                                                        Submitted on {formatDate(project.phase2Submission.submitted_at)}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <button
-                                                    onClick={() => handleSubmissionPreview(project.phase2Submission)}
-                                                    className="flex items-center gap-2 px-3 py-2 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 rounded-md transition-colors text-sm"
-                                                    title="Preview"
-                                                >
-                                                    <Eye size={14} className="sm:w-4 sm:h-4" />
-                                                    <span>Preview</span>
-                                                </button>
-                                                <a
-                                                    href={project.phase2Submission.file_url}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="flex items-center justify-center space-x-1 text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-3 py-2 rounded-md transition-colors text-sm"
-                                                >
-                                                    <Download size={14} className="sm:w-4 sm:h-4" />
-                                                    <span>Download</span>
-                                                </a>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <>
-                                        {project.phase2Submissions && project.phase2Submissions.length > 0 ? (
-                                            <div className="grid gap-4">
-                                                {project.phase2Submissions.map((submission) => (
-                                                    <div key={submission.id} className="flex flex-col sm:flex-row sm:items-center justify-between border border-gray-300 rounded-lg p-3 sm:p-4 hover:bg-gray-50 transition-colors space-y-3 sm:space-y-0">
-                                                        <div className="flex items-center space-x-3 sm:space-x-4 flex-1 min-w-0">
-                                                            <div className="relative w-10 h-12 sm:w-12 sm:h-16 flex-shrink-0 rounded-md border border-gray-200 bg-gray-50 overflow-hidden">
-                                                                <Image
-                                                                    src={pdf}
-                                                                    alt="Submission PDF"
-                                                                    fill
-                                                                    className="object-contain p-1"
-                                                                />
-                                                            </div>
-                                                            <div className="flex-1 min-w-0">
-                                                                <p className="font-semibold text-gray-900 truncate text-sm sm:text-base">
-                                                                    {submission.file_name}
-                                                                </p>
-                                                                <p className="text-xs sm:text-sm text-gray-500">
-                                                                    Submitted by {submission.username} on {formatDate(submission.submitted_at)}
-                                                                </p>
-                                                            </div>
-                                                        </div>
-                                                        <div className="flex items-center gap-2">
-                                                            <button
-                                                                onClick={() => handleSubmissionPreview(submission)}
-                                                                className="flex items-center gap-2 px-3 py-2 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 rounded-md transition-colors text-sm"
-                                                                title="Preview"
-                                                            >
-                                                                <Eye size={14} className="sm:w-4 sm:h-4" />
-                                                                <span>Preview</span>
-                                                            </button>
-                                                            <Link
-                                                                href={submission.file_url}
-                                                                target="_blank"
-                                                                rel="noopener noreferrer"
-                                                                className="flex items-center px-3 py-2 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 rounded-md transition-colors text-sm"
-                                                            >
-                                                                <Download size={14} className="mr-1 sm:w-4 sm:h-4" />
-                                                                <span>Download</span>
-                                                            </Link>
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                                <div className="flex justify-between items-center mb-4">
-                                                    {/* <h3 className="text-lg sm:text-xl font-semibold">Phase 2 Submissions</h3> */}
-                                                    {['teacher', 'academic_team', 'admin'].includes(user?.role || '') && (
-                                                        <div className="flex gap-2">
-                                                            <button
-                                                                onClick={() => handleDownloadAllSubmissions('phase2')}
-                                                                className="px-3 py-1 bg-indigo-600 text-white rounded-md text-sm hover:bg-indigo-700 flex items-center gap-1"
-                                                                disabled={!project?.phase2Submissions?.length}
-                                                            >
-                                                                <Download size={16} />
-                                                                <span>Download All</span>
-                                                            </button>
-                                                            <button
-                                                                onClick={() => handleGeneratePhase2CSV()}
-                                                                className="px-3 py-1 bg-green-600 text-white rounded-md text-sm hover:bg-green-700 flex items-center gap-1"
-                                                                disabled={!project?.phase2Submissions?.length}
-                                                            >
-                                                                <FileSpreadsheet size={16} />
-                                                                <span>Generate CSV</span>
-                                                            </button>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            <p className="text-gray-600 text-sm sm:text-base">No submissions for Phase 2 yet.</p>
-                                        )}
-                                    </>
-                                )}
-
-                                {/* Phase 2 Submission Form */}
-                                {user?.role === "student" && !project.phase2Submission && project.phase1Submission && !project.phase2DeadlinePassed && (
-                                    <div className="mt-4 sm:mt-6">
-                                        <SubmissionForm
-                                            projectId={project.id}
-                                            phase="phase2"
-                                            projectState={project.state}
-                                            onSubmissionSuccess={async () => {
-                                                const updated = await projectsApi.getProject(projectId as string);
-                                                setProject(updated.project);
-                                            }}
-                                        />
-                                    </div>
-                                )}
-
-                                {/* Message if student already submitted */}
-                                {user?.role === "student" && !!project.phase2Submission && (
-                                    <p className="mt-4 text-green-700 font-medium text-sm sm:text-base">
-                                        You have already submitted for Phase 2.
-                                    </p>
-                                )}
-
-                                {/* Message if student needs to submit Phase 1 first */}
-                                {user?.role === "student" && !project.phase2Submission && !project.phase1Submission && !project.phase2DeadlinePassed && (
-                                    <p className="mt-4 text-amber-600 font-medium">
-                                        You must submit Phase 1 before you can submit Phase 2.
-                                    </p>
-                                )}
-
-                                {/* Message if deadline has passed */}
-                                {user?.role === "student" && !project.phase2Submission && project.phase2DeadlinePassed && (
-                                    <p className="mt-4 text-red-600 font-medium">
-                                        The deadline for Phase 2 has passed.
+                                        The submission deadline has passed.
                                     </p>
                                 )}
                             </div>
                         </div>
-
                     </div>
                 </div>
             </div>
