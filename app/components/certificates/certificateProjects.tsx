@@ -22,13 +22,9 @@ interface Project {
     id: string | number;
     title: string;
     description: string;
-    finalDeadline: string;
+    deadline: string;
     reviews: Review[];
-    phase1Submission?: {
-        id: number;
-        submitted_at: string;
-    };
-    phase2Submission?: {
+    submission?: {
         id: number;
         submitted_at: string;
     };
@@ -43,27 +39,22 @@ const CertificateProjects = () => {
     const [error, setError] = useState<string | null>(null);
     const [filter, setFilter] = useState<'all' | 'high-rating'>('all');
 
-    const getPhaseRating = (project: Project, phaseSubmission?: { id: number }) => {
-        if (!phaseSubmission?.id || !project.reviews) return 0;
+    const getProjectRating = (project: Project) => {
+        if (!project.submission?.id || !project.reviews) return 0;
 
-        // Find reviews for this phase submission
-        const phaseReviews = project.reviews.filter(review => review.submission_id === phaseSubmission.id);
-        if (phaseReviews.length === 0) return 0;
+        // Find reviews for this submission
+        const submissionReviews = project.reviews.filter(review => review.submission_id === project.submission.id);
+        if (submissionReviews.length === 0) return 0;
 
-        // Get the highest rating
-        return Math.max(...phaseReviews.map(r => r.rating));
-    };
-
-    const getCombinedRating = (project: Project) => {
-        const phase1Rating = getPhaseRating(project, project.phase1Submission);
-        const phase2Rating = getPhaseRating(project, project.phase2Submission);
-        return (phase1Rating + phase2Rating) / 2;
+        // Get the average rating
+        const totalRating = submissionReviews.reduce((sum, review) => sum + review.rating, 0);
+        return totalRating / submissionReviews.length;
     };
 
     const isProjectCertificateEligible = (project: Project) => {
-        if (!project.phase1Submission || !project.phase2Submission) return false;
-        const combinedRating = getCombinedRating(project);
-        return combinedRating > 6;
+        if (!project.submission) return false;
+        const rating = getProjectRating(project);
+        return rating > 6;
     };
 
     useEffect(() => {
@@ -94,8 +85,8 @@ const CertificateProjects = () => {
 
     const filteredProjects = projects.filter(project => {
         if (filter === 'high-rating') {
-            const combinedRating = getCombinedRating(project);
-            return combinedRating >= 9;
+            const rating = getProjectRating(project);
+            return rating >= 9;
         }
         return true;
     });
@@ -193,7 +184,7 @@ const CertificateProjects = () => {
                                             d="M5 13l4 4L19 7"
                                         />
                                     </svg>
-                                    Complete both Phase 1 and Phase 2 submissions
+                                    Complete your project submission
                                 </li>
                                 <li className="flex items-center">
                                     <svg
@@ -286,9 +277,7 @@ const CertificateProjects = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                     {filteredProjects.map((project) => {
-                        const phase1Rating = getPhaseRating(project, project.phase1Submission);
-                        const phase2Rating = getPhaseRating(project, project.phase2Submission);
-                        const combinedRating = getCombinedRating(project);
+                        const projectRating = getProjectRating(project);
 
                         return (
                             <div key={project.id} className="border border-gray-200 rounded-lg p-6 mt-4 hover:shadow-md transition bg-white flex flex-col min-h-80">
@@ -299,21 +288,21 @@ const CertificateProjects = () => {
                                         <div className="flex justify-between items-center">
                                             <span className="text-gray-500">Project Rating:</span>
                                             <div className="flex items-center gap-2">
-                                                <span className={`px-3 py-1.5 rounded text-sm font-medium border ${getRatingBadgeColor(combinedRating)}`}>
-                                                    {combinedRating.toFixed(1)}/10
+                                                <span className={`px-3 py-1.5 rounded text-sm font-medium border ${getRatingBadgeColor(projectRating)}`}>
+                                                    {projectRating.toFixed(1)}/10
                                                 </span>
-                                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${combinedRating > 6
+                                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${projectRating > 6
                                                     ? 'bg-green-100 text-green-800'
                                                     : 'bg-yellow-100 text-yellow-800'
                                                     }`}>
-                                                    {combinedRating > 6 ? 'Eligible' : 'Not Eligible'}
+                                                    {projectRating > 6 ? 'Eligible' : 'Not Eligible'}
                                                 </span>
                                             </div>
                                         </div>
                                         <div className="flex justify-between">
                                             <span className="text-gray-500">Completed:</span>
                                             <span className="text-gray-700 text-xs">
-                                                {project.phase2Submission?.submitted_at ? formatDate(project.phase2Submission.submitted_at) : 'N/A'}
+                                                {project.submission?.submitted_at ? formatDate(project.submission.submitted_at) : 'N/A'}
                                             </span>
                                         </div>
                                     </div>
@@ -321,16 +310,16 @@ const CertificateProjects = () => {
                                 <Link
                                     href={`/certificate?projectId=${project.id}`}
                                     className={`inline-block w-full text-center py-2 rounded-md text-sm font-medium mt-auto transition
-                                        ${combinedRating > 6
+                                        ${projectRating > 6
                                             ? 'bg-black text-white hover:bg-gray-800'
                                             : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}
                                     onClick={(e) => {
-                                        if (!(combinedRating > 6)) {
+                                        if (!(projectRating > 6)) {
                                             e.preventDefault();
                                         }
                                     }}
                                 >
-                                    {combinedRating > 6
+                                    {projectRating > 6
                                         ? (user?.role === 'student' ? 'Generate Certificate' : 'View Certificate')
                                         : 'Not Eligible for Certificate'}
                                 </Link>
