@@ -46,8 +46,7 @@ interface PendingProject {
     title: string;
     description: string;
     created_at: string;
-    first_deadline: string;
-    final_deadline: string;
+    deadline: string;
     status: string;
     creator_name: string;
 }
@@ -384,15 +383,9 @@ const ManagerDashboard = () => {
 
                                     <div className="space-y-2 mb-6 text-sm">
                                         <div className="flex justify-between">
-                                            <span className="text-gray-500">Phase 1 Deadline:</span>
+                                            <span className="text-gray-500">Deadline:</span>
                                             <span className="font-medium">
-                                                {new Date(project.first_deadline).toLocaleDateString()}
-                                            </span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-gray-500">Final Deadline:</span>
-                                            <span className="font-medium">
-                                                {new Date(project.final_deadline).toLocaleDateString()}
+                                                {new Date(project.deadline).toLocaleDateString()}
                                             </span>
                                         </div>
                                         <div className="flex justify-between">
