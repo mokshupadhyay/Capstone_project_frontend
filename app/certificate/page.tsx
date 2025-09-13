@@ -61,9 +61,8 @@ const CertificateContent = () => {
                     if (thisProject) {
                         setProjectData(thisProject);
 
-                        // Check if both phases are completed
-                        const phase1Completed = !!thisProject.phase1Submission;
-                        const phase2Completed = !!thisProject.phase2Submission;
+                        // Check if project is completed (single submission)
+                        const projectCompleted = !!thisProject.submission;
 
                         // Calculate the max rating from reviews
                         let highestRating = 0;
@@ -72,8 +71,8 @@ const CertificateContent = () => {
                         }
                         setMaxRating(highestRating);
 
-                        // Eligible for certificate if both phases are completed and max rating > 7
-                        const eligible = phase1Completed && phase2Completed && highestRating >= 7;
+                        // Eligible for certificate if project is completed and max rating > 6
+                        const eligible = projectCompleted && highestRating > 6;
                         setIsEligibleForCertificate(eligible);
 
                         // If eligible, prepare certificate data
@@ -194,7 +193,7 @@ const CertificateContent = () => {
                     <h2 className="text-xl font-bold mb-2">Not Eligible for Certificate</h2>
                     <p>To earn your certificate, you need to:</p>
                     <ul className="list-disc ml-6 mt-2">
-                        <li>Complete both Phase 1 and Phase 2 of the project</li>
+                        <li>Complete your project submission</li>
                         <li>Receive a review rating of at least 7/10</li>
                     </ul>
                     <p className="mt-2">Your highest review rating: {maxRating}/10</p>
