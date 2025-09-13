@@ -111,7 +111,7 @@ const ReviewDashboardPage = () => {
                                             <div className="flex items-start space-x-3">
                                                 <div className="w-2 h-2 bg-indigo-500 rounded-full mt-2 flex-shrink-0"></div>
                                                 <p className="text-slate-700 leading-relaxed">
-                                                    <span className="font-semibold">Comprehensive Evaluation:</span> Review both Phase 1 and Phase 2 submissions for complete assessment of student progress.
+                                                    <span className="font-semibold">Comprehensive Evaluation:</span> Review student submissions for complete assessment of their project progress.
                                                 </p>
                                             </div>
                                             <div className="flex items-start space-x-3">
@@ -170,7 +170,7 @@ const ReviewDashboardPage = () => {
                                             <div className="flex items-start space-x-3">
                                                 <div className="w-2 h-2 bg-green-500 rounded-full mt-2 flex-shrink-0"></div>
                                                 <p className="text-slate-700 leading-relaxed">
-                                                    <span className="font-semibold">Review Availability:</span> You can view reviews once both Phase 1 and Phase 2 submissions have been evaluated by instructors.
+                                                    <span className="font-semibold">Review Availability:</span> You can view reviews once your submissions have been evaluated by instructors.
                                                 </p>
                                             </div>
                                             <div className="flex items-start space-x-3">
