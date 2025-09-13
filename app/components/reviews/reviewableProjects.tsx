@@ -10,8 +10,7 @@ interface Project {
     title: string;
     description: string;
     created_by: number;
-    first_deadline: string;
-    final_deadline: string;
+    deadline: string;
     created_at: string;
     status: string;
     approved_by?: number;
@@ -26,32 +25,23 @@ interface Project {
         uploaded_at: string;
     }>;
     // For non-student roles
-    phase1SubmissionCount?: number;
-    phase2SubmissionCount?: number;
-    completeSubmissionCount?: number;
+    submissionCount?: number;
     reviewCount?: number;
-    phase1_reviewable?: number;
-    phase2_reviewable?: number;
+    reviewable?: number;
     reviewed_count?: number;
     reviews?: any[];
     // For student role
-    hasSubmittedPhase1?: boolean;
-    hasSubmittedPhase2?: boolean;
-    phase1Submission?: any;
-    phase2Submission?: any;
+    hasSubmitted?: boolean;
+    submission?: any;
     // Computed fields
-    phase1Available?: boolean;
-    phase2Available?: boolean;
+    submissionAvailable?: boolean;
 }
-
-type FilterPhase = 'phase1' | 'phase2' | 'all';
 
 export default function ReviewableProjects() {
     const { user } = useAuth();
     const [projects, setProjects] = useState<Project[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [activeFilter, setActiveFilter] = useState<FilterPhase>('phase1');
     const [expandedProject, setExpandedProject] = useState<number | null>(null);
 
     useEffect(() => {
@@ -69,11 +59,10 @@ export default function ReviewableProjects() {
 
                     // Filter only projects with submissions and enhance data
                     const enhancedProjects = projectsData
-                        .filter(project => project.hasSubmittedPhase1 || project.hasSubmittedPhase2)
+                        .filter(project => project.hasSubmitted)
                         .map(project => ({
                             ...project,
-                            phase1Available: project.hasSubmittedPhase1 || false,
-                            phase2Available: project.hasSubmittedPhase2 || false,
+                            submissionAvailable: project.hasSubmitted || false,
                             reviewed_count: project.reviews?.length || 0,
                         }));
                     setProjects(enhancedProjects);
@@ -84,13 +73,10 @@ export default function ReviewableProjects() {
                     projectsData = response.projects || [];
 
                     const enhancedProjects = projectsData.map(project => {
-                        const phase1Reviewable = (project.phase1SubmissionCount || 0) > (project.reviewCount || 0) ? 1 : 0;
-                        const remainingReviews = Math.max(0, (project.reviewCount || 0) - (project.phase1SubmissionCount || 0));
-                        const phase2Reviewable = (project.phase2SubmissionCount || 0) > remainingReviews ? 1 : 0;
+                        const reviewable = (project.submissionCount || 0) > (project.reviewCount || 0) ? 1 : 0;
                         return {
                             ...project,
-                            phase1_reviewable: phase1Reviewable,
-                            phase2_reviewable: phase2Reviewable,
+                            reviewable: reviewable,
                             reviewed_count: project.reviewCount || 0,
                         };
                     });
@@ -109,46 +95,6 @@ export default function ReviewableProjects() {
         fetchProjects();
     }, [user]);
 
-    const getFilteredProjects = () => {
-        if (user?.role === 'student') {
-            return projects.filter(project => {
-                if (activeFilter === 'phase1') {
-                    return project.phase1Available;
-                } else if (activeFilter === 'phase2') {
-                    return project.phase2Available;
-                } else {
-                    return project.phase1Available || project.phase2Available;
-                }
-            });
-        } else {
-            return projects.filter(project => {
-                if (activeFilter === 'phase1') {
-                    return (project.phase1SubmissionCount || 0) > 0;
-                } else if (activeFilter === 'phase2') {
-                    return (project.phase2SubmissionCount || 0) > 0;
-                } else {
-                    return (project.phase1SubmissionCount || 0) > 0 || (project.phase2SubmissionCount || 0) > 0;
-                }
-            });
-        }
-    };
-
-    const getProjectCounts = () => {
-        const phase1Count = projects.filter(project =>
-            user?.role === 'student'
-                ? project.phase1Available
-                : (project.phase1SubmissionCount || 0) > 0
-        ).length;
-
-        const phase2Count = projects.filter(project =>
-            user?.role === 'student'
-                ? project.phase2Available
-                : (project.phase2SubmissionCount || 0) > 0
-        ).length;
-
-        return { phase1Count, phase2Count };
-    };
-
     const formatDate = (dateString: string) => {
         return new Date(dateString).toLocaleDateString('en-US', {
             year: 'numeric',
@@ -157,9 +103,9 @@ export default function ReviewableProjects() {
         });
     };
 
-    const getPhaseReviews = (project: Project, phase: number) => {
+    const getSubmissionReviews = (project: Project) => {
         if (!project.reviews) return [];
-        const targetSubmissionId = phase === 1 ? project.phase1Submission?.id : project.phase2Submission?.id;
+        const targetSubmissionId = project.submission?.id;
         return project.reviews.filter(review => review.submission_id === targetSubmissionId);
     };
 
@@ -183,163 +129,70 @@ export default function ReviewableProjects() {
                     {project.description || 'No description provided'}
                 </p>
 
-                {/* Deadlines */}
+                {/* Deadline */}
                 <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-100">
-                    <div className="grid grid-cols-2 gap-3 text-sm">
-                        <div>
-                            <span className="text-gray-500 block font-medium">Phase 1 Due:</span>
-                            <span className="font-semibold text-gray-800">{formatDate(project.first_deadline)}</span>
-                        </div>
-                        <div>
-                            <span className="text-gray-500 block font-medium">Final Due:</span>
-                            <span className="font-semibold text-gray-800">{formatDate(project.final_deadline)}</span>
-                        </div>
+                    <div className="text-sm">
+                        <span className="text-gray-500 block font-medium">Deadline:</span>
+                        <span className="font-semibold text-gray-800">{formatDate(project.deadline)}</span>
                     </div>
                 </div>
 
-                {/* Phase Sections */}
-                <div className="space-y-4">
-                    {/* Phase 1 */}
-                    {project.phase1Available && (
-                        <div className="border border-gray-200 rounded-lg overflow-hidden">
-                            <div
-                                className="bg-gray-50 p-4 cursor-pointer hover:bg-gray-100 transition-colors"
-                                onClick={() => setExpandedProject(expandedProject === project.id * 10 + 1 ? null : project.id * 10 + 1)}
-                            >
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center space-x-3">
-                                        <div className="w-8 h-8 bg-violet-100 rounded-full flex items-center justify-center">
-                                            <span className="text-violet-600 font-bold text-sm">1</span>
-                                        </div>
-                                        <div>
-                                            <h4 className="font-semibold text-gray-900">Phase 1 Submission</h4>
-                                            <p className="text-xs text-gray-500">
-                                                Submitted: {project.phase1Submission?.submitted_at ? formatDate(project.phase1Submission.submitted_at) : 'N/A'}
-                                            </p>
-                                        </div>
+                {/* Submission Section */}
+                {project.submissionAvailable && (
+                    <div className="border border-gray-200 rounded-lg overflow-hidden">
+                        <div
+                            className="bg-gray-50 p-4 cursor-pointer hover:bg-gray-100 transition-colors"
+                            onClick={() => setExpandedProject(expandedProject === project.id ? null : project.id)}
+                        >
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center space-x-3">
+                                    <div className="w-8 h-8 bg-violet-100 rounded-full flex items-center justify-center">
+                                        <span className="text-violet-600 font-bold text-sm">✓</span>
                                     </div>
-                                    <div className="flex items-center space-x-3">
-                                        {getPhaseReviews(project, 1).length > 0 && (
-                                            <span className="bg-violet-100 text-violet-700 px-2 py-1 rounded-full text-xs font-medium">
-                                                {getPhaseReviews(project, 1).length} Review{getPhaseReviews(project, 1).length > 1 ? 's' : ''}
-                                            </span>
-                                        )}
-                                        <svg
-                                            className={`w-5 h-5 text-gray-400 transition-transform ${expandedProject === project.id * 10 + 1 ? 'rotate-180' : ''
-                                                }`}
-                                            fill="none"
-                                            stroke="currentColor"
-                                            viewBox="0 0 24 24"
-                                        >
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                        </svg>
+                                    <div>
+                                        <h4 className="font-semibold text-gray-900">Your Submission</h4>
+                                        <p className="text-xs text-gray-500">
+                                            Submitted: {project.submission?.submitted_at ? formatDate(project.submission.submitted_at) : 'N/A'}
+                                        </p>
                                     </div>
                                 </div>
-                            </div>
-
-                            {expandedProject === project.id * 10 + 1 && (
-                                <div className="p-4 bg-white border-t border-gray-200">
-                                    {/* File Info */}
-                                    <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-                                        <p className="text-sm font-medium text-gray-700 mb-1">Submitted File:</p>
-                                        <p className="text-sm text-gray-600">{project.phase1Submission?.file_name || 'No file'}</p>
-                                    </div>
-
-                                    {/* Reviews */}
-                                    {getPhaseReviews(project, 1).length > 0 ? (
-                                        <div className="space-y-3">
-                                            <h5 className="font-medium text-gray-900">Reviews & Feedback</h5>
-                                            {getPhaseReviews(project, 1).map((review, idx) => (
-                                                <Link
-                                                    href={`/review?projectId=${project.id}`}
-                                                    key={idx}
-                                                    className="block no-underline"
-                                                >
-                                                    <div key={idx} className="border border-gray-200 rounded-lg p-4">
-                                                        <div className="flex items-center justify-between mb-2">
-                                                            <span className="font-medium text-gray-900">{review.reviewer_name}</span>
-                                                            <div className="flex items-center space-x-2">
-                                                                <span className="text-xs text-gray-500">{review.reviewer_role}</span>
-                                                                <div className="flex items-center space-x-1">
-                                                                    <svg className="w-4 h-4 text-violet-500" fill="currentColor" viewBox="0 0 20 20">
-                                                                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                                                                    </svg>
-                                                                    <span className="font-semibold text-gray-900">{review.rating}/10</span>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                        <p className="text-gray-600 text-sm leading-relaxed">{review.comments}</p>
-                                                        <p className="text-xs text-gray-400 mt-2">{formatDate(review.created_at)}</p>
-                                                    </div>
-                                                </Link>
-                                            ))}
-                                        </div>
-                                    ) : (
-                                        <div className="text-center py-4">
-                                            <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-2">
-                                                <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                </svg>
-                                            </div>
-                                            <p className="text-sm text-gray-500">Awaiting review feedback</p>
-                                        </div>
+                                <div className="flex items-center space-x-3">
+                                    {getSubmissionReviews(project).length > 0 && (
+                                        <span className="bg-violet-100 text-violet-700 px-2 py-1 rounded-full text-xs font-medium">
+                                            {getSubmissionReviews(project).length} Review{getSubmissionReviews(project).length > 1 ? 's' : ''}
+                                        </span>
                                     )}
-                                </div>
-                            )}
-                        </div>
-                    )}
-
-                    {/* Phase 2 */}
-                    {project.phase2Available && (
-                        <div className="border border-gray-200 rounded-lg overflow-hidden">
-                            <div
-                                className="bg-gray-50 p-4 cursor-pointer hover:bg-gray-100 transition-colors"
-                                onClick={() => setExpandedProject(expandedProject === project.id * 10 + 2 ? null : project.id * 10 + 2)}
-                            >
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center space-x-3">
-                                        <div className="w-8 h-8 bg-violet-100 rounded-full flex items-center justify-center">
-                                            <span className="text-violet-600 font-bold text-sm">2</span>
-                                        </div>
-                                        <div>
-                                            <h4 className="font-semibold text-gray-900">Phase 2 Submission</h4>
-                                            <p className="text-xs text-gray-500">
-                                                Submitted: {project.phase2Submission?.submitted_at ? formatDate(project.phase2Submission.submitted_at) : 'N/A'}
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center space-x-3">
-                                        {getPhaseReviews(project, 2).length > 0 && (
-                                            <span className="bg-violet-100 text-violet-700 px-2 py-1 rounded-full text-xs font-medium">
-                                                {getPhaseReviews(project, 2).length} Review{getPhaseReviews(project, 2).length > 1 ? 's' : ''}
-                                            </span>
-                                        )}
-                                        <svg
-                                            className={`w-5 h-5 text-gray-400 transition-transform ${expandedProject === project.id * 10 + 2 ? 'rotate-180' : ''
-                                                }`}
-                                            fill="none"
-                                            stroke="currentColor"
-                                            viewBox="0 0 24 24"
-                                        >
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                        </svg>
-                                    </div>
+                                    <svg
+                                        className={`w-5 h-5 text-gray-400 transition-transform ${expandedProject === project.id ? 'rotate-180' : ''
+                                            }`}
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                    </svg>
                                 </div>
                             </div>
+                        </div>
 
-                            {expandedProject === project.id * 10 + 2 && (
-                                <div className="p-4 bg-white border-t border-gray-200">
-                                    {/* File Info */}
-                                    <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-                                        <p className="text-sm font-medium text-gray-700 mb-1">Submitted File:</p>
-                                        <p className="text-sm text-gray-600">{project.phase2Submission?.file_name || 'No file'}</p>
-                                    </div>
+                        {expandedProject === project.id && (
+                            <div className="p-4 bg-white border-t border-gray-200">
+                                {/* File Info */}
+                                <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+                                    <p className="text-sm font-medium text-gray-700 mb-1">Submitted File:</p>
+                                    <p className="text-sm text-gray-600">{project.submission?.file_name || 'No file'}</p>
+                                </div>
 
-                                    {/* Reviews */}
-                                    {getPhaseReviews(project, 2).length > 0 ? (
-                                        <div className="space-y-3">
-                                            <h5 className="font-medium text-gray-900">Reviews & Feedback</h5>
-                                            {getPhaseReviews(project, 2).map((review, idx) => (
+                                {/* Reviews */}
+                                {getSubmissionReviews(project).length > 0 ? (
+                                    <div className="space-y-3">
+                                        <h5 className="font-medium text-gray-900">Reviews & Feedback</h5>
+                                        {getSubmissionReviews(project).map((review, idx) => (
+                                            <Link
+                                                href={`/review?projectId=${project.id}`}
+                                                key={idx}
+                                                className="block no-underline"
+                                            >
                                                 <div key={idx} className="border border-gray-200 rounded-lg p-4">
                                                     <div className="flex items-center justify-between mb-2">
                                                         <span className="font-medium text-gray-900">{review.reviewer_name}</span>
@@ -356,23 +209,23 @@ export default function ReviewableProjects() {
                                                     <p className="text-gray-600 text-sm leading-relaxed">{review.comments}</p>
                                                     <p className="text-xs text-gray-400 mt-2">{formatDate(review.created_at)}</p>
                                                 </div>
-                                            ))}
+                                            </Link>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="text-center py-4">
+                                        <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-2">
+                                            <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
                                         </div>
-                                    ) : (
-                                        <div className="text-center py-4">
-                                            <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-2">
-                                                <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                </svg>
-                                            </div>
-                                            <p className="text-sm text-gray-500">Awaiting review feedback</p>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-                        </div>
-                    )}
-                </div>
+                                        <p className="text-sm text-gray-500">Awaiting review feedback</p>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
         </div>
     );
@@ -396,34 +249,27 @@ export default function ReviewableProjects() {
                     {project.description || 'No description provided'}
                 </p>
 
-                {/* Deadlines */}
+                {/* Deadline */}
                 <div className="mb-4 p-3 bg-slate-50/80 rounded-lg">
-                    <div className="grid grid-cols-2 gap-2 text-xs">
-                        <div>
-                            <span className="text-slate-500 block">Phase 1 Due:</span>
-                            <span className="font-medium text-slate-700">{formatDate(project.first_deadline)}</span>
-                        </div>
-                        <div>
-                            <span className="text-slate-500 block">Final Due:</span>
-                            <span className="font-medium text-slate-700">{formatDate(project.final_deadline)}</span>
-                        </div>
+                    <div className="text-xs">
+                        <span className="text-slate-500 block">Deadline:</span>
+                        <span className="font-medium text-slate-700">{formatDate(project.deadline)}</span>
                     </div>
                 </div>
 
                 {/* Status Information */}
                 <div className="space-y-2 mb-4">
                     <div className="flex justify-between items-center text-sm">
-                        <span className="text-slate-600">Phase 1 Pending:</span>
-                        <span className={`font-semibold px-2 py-1 rounded-full text-xs ${project.phase1_reviewable ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'
-                            }`}>
-                            {project.phase1_reviewable || 0}
+                        <span className="text-slate-600">Submissions:</span>
+                        <span className="font-semibold px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-700">
+                            {project.submissionCount || 0}
                         </span>
                     </div>
                     <div className="flex justify-between items-center text-sm">
-                        <span className="text-slate-600">Phase 2 Pending:</span>
-                        <span className={`font-semibold px-2 py-1 rounded-full text-xs ${project.phase2_reviewable ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'
+                        <span className="text-slate-600">Pending Review:</span>
+                        <span className={`font-semibold px-2 py-1 rounded-full text-xs ${project.reviewable ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'
                             }`}>
-                            {project.phase2_reviewable || 0}
+                            {project.reviewable || 0}
                         </span>
                     </div>
                     <div className="flex justify-between items-center text-sm">
@@ -436,17 +282,15 @@ export default function ReviewableProjects() {
 
                 {/* Action Button */}
                 <Link
-                    href={`/review?projectId=${project.id}${project.phase1_reviewable ? '&phase=1' : project.phase2_reviewable ? '&phase=2' : ''}`}
-                    className={`block w-full text-center py-3 px-4 rounded-lg font-medium text-sm transition-all duration-200 ${(project.phase1_reviewable || project.phase2_reviewable)
+                    href={`/review?projectId=${project.id}`}
+                    className={`block w-full text-center py-3 px-4 rounded-lg font-medium text-sm transition-all duration-200 ${project.reviewable
                         ? 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-lg shadow-indigo-500/25 hover:shadow-xl hover:shadow-indigo-500/30'
                         : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200'
                         }`}
                 >
-                    {project.phase1_reviewable
-                        ? 'Review Phase 1 Submissions'
-                        : project.phase2_reviewable
-                            ? 'Review Phase 2 Submissions'
-                            : 'View Completed Reviews'}
+                    {project.reviewable
+                        ? 'Review Submissions'
+                        : 'View Completed Reviews'}
                 </Link>
             </div>
         </div>
@@ -479,57 +323,7 @@ export default function ReviewableProjects() {
         );
     }
 
-    const filteredProjects = getFilteredProjects();
-    const { phase1Count, phase2Count } = getProjectCounts();
-
-    // Filter tabs
-    const renderFilterTabs = () => (
-        <div className="mb-8">
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div className="flex items-center space-x-2 p-1 bg-white/60 backdrop-blur-sm rounded-xl border border-gray-200/50 shadow-sm">
-                    <button
-                        onClick={() => setActiveFilter('phase1')}
-                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${activeFilter === 'phase1'
-                            ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-lg shadow-indigo-500/25'
-                            : 'text-gray-600 hover:bg-gray-50'
-                            }`}
-                    >
-                        Phase 1 ({phase1Count})
-                    </button>
-                    <button
-                        onClick={() => setActiveFilter('phase2')}
-                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${activeFilter === 'phase2'
-                            ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-lg shadow-indigo-500/25'
-                            : 'text-gray-600 hover:bg-gray-50'
-                            }`}
-                    >
-                        Phase 2 ({phase2Count})
-                    </button>
-                    <button
-                        onClick={() => setActiveFilter('all')}
-                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${activeFilter === 'all'
-                            ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-lg shadow-indigo-500/25'
-                            : 'text-gray-600 hover:bg-gray-50'
-                            }`}
-                    >
-                        All Projects
-                    </button>
-                </div>
-                <div className="flex items-center space-x-4 text-sm text-gray-500">
-                    <div className="flex items-center">
-                        <div className="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
-                        <span>Reviewed</span>
-                    </div>
-                    <div className="flex items-center">
-                        <div className="w-3 h-3 bg-amber-500 rounded-full mr-2"></div>
-                        <span>Pending Review</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-
-    if (filteredProjects.length === 0) {
+    if (projects.length === 0) {
         return (
             <div className="min-h-[400px] flex items-center justify-center">
                 <div className="bg-white/80 backdrop-blur-sm border border-gray-200/50 rounded-2xl p-8 shadow-xl text-center max-w-lg">
@@ -592,9 +386,8 @@ export default function ReviewableProjects() {
 
     return (
         <div>
-            {renderFilterTabs()}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredProjects.map((project) => (
+                {projects.map((project) => (
                     <div key={project.id}>
                         {user?.role === 'student'
                             ? renderStudentProjectCard(project)
