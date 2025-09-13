@@ -145,8 +145,7 @@ interface UserData {
 interface ProjectData {
   title: string;
   description: string;
-  firstDeadline: string; // ISO format date string
-  finalDeadline: string; // ISO format date string
+  deadline: string; // ISO format date string
   accessRoles?: Array<{
     role: string;
     canView: boolean;
@@ -160,7 +159,6 @@ interface SubmissionResponse {
   submissionId: string;
   fileName: string;
   fileUrl: string;
-  phase: number;
   status: string;
   size: string;
 }
@@ -180,16 +178,11 @@ interface ProjectResponse {
     student_id: string;
     username: string;
     email: string;
-    phase1_submission_id: string | null;
-    phase1_file_url: string | null;
-    phase1_submitted_at: string | null;
-    phase1_status: string | null;
-    phase2_submission_id: string | null;
-    phase2_file_url: string | null;
-    phase2_submitted_at: string | null;
-    phase2_status: string | null;
-    phase1_review_count?: number;
-    phase2_review_count?: number;
+    submission_id: string | null;
+    file_url: string | null;
+    submitted_at: string | null;
+    status: string | null;
+    review_count?: number;
   }>;
   project_state: "active" | "past";
 }
@@ -197,9 +190,8 @@ interface ProjectResponse {
 // ---------- Projects API ----------
 export const projectsApi = {
   // Get submissions for a project (Teacher, Academic Team, etc.)
-  getSubmissions: (projectId: string, phase?: number): Promise<any[]> => {
-    const query = phase ? `?phase=${phase}` : "";
-    return fetchWithAuth(`/api/projects/${projectId}/submissions${query}`);
+  getSubmissions: (projectId: string): Promise<any[]> => {
+    return fetchWithAuth(`/api/projects/${projectId}/submissions`);
   },
 
   // Get complete submissions (across phases)
@@ -248,13 +240,12 @@ export const projectsApi = {
   createProject: (projectData: ProjectData): Promise<any> => {
     console.log("Creating project with data:", projectData);
 
-    // Validate date fields before sending
+    // Validate date field before sending
     try {
-      // Make sure the date strings can be parsed
-      const firstDate = new Date(projectData.firstDeadline);
-      const finalDate = new Date(projectData.finalDeadline);
+      // Make sure the date string can be parsed
+      const deadlineDate = new Date(projectData.deadline);
 
-      if (isNaN(firstDate.getTime()) || isNaN(finalDate.getTime())) {
+      if (isNaN(deadlineDate.getTime())) {
         throw new Error("Invalid date format in project data");
       }
 
@@ -456,32 +447,62 @@ export const projectsApi = {
     });
   },
 
-  // Legacy method for backward compatibility - delegates to appropriate phase method
+  // Submit solution (single phase)
   submitSolution: (
     projectId: string,
-    formData: FormData,
-    phase: "phase1" | "phase2" | number = 1
-  ): Promise<any> => {
-    // Handle both string and number phase formats
-    if (phase === "phase1" || phase === 1) {
-      return projectsApi.submitPhase1Solution(projectId, formData);
-    } else if (phase === "phase2" || phase === 2) {
-      return projectsApi.submitPhase2Solution(projectId, formData);
-    } else {
-      return Promise.reject(
-        new Error(
-          `Invalid phase: ${phase}. Must be "phase1", "phase2", 1, or 2.`
-        )
-      );
+    formData: FormData
+  ): Promise<SubmissionResponse> => {
+    const token = getToken();
+    if (!token) throw new Error("Authentication required");
+
+    console.log(`Submitting solution for project: ${projectId}`);
+
+    // Log file content for debugging
+    const file = formData.get("file") as File;
+    if (file) {
+      console.log("File details:", {
+        name: file.name,
+        type: file.type,
+        size: `${(file.size / 1024).toFixed(2)} KB`,
+      });
     }
+
+    return fetch(`${API_URL}/api/projects/${projectId}/submissions`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: formData,
+    }).then(async (response) => {
+      // Handle both JSON and non-JSON responses
+      const contentType = response.headers.get("content-type");
+      let data;
+
+      if (contentType && contentType.includes("application/json")) {
+        data = await response.json();
+      } else {
+        const text = await response.text();
+        try {
+          data = JSON.parse(text);
+        } catch (e) {
+          data = { message: text || "Unknown error" };
+        }
+      }
+
+      console.log("Submission response:", data);
+
+      if (!response.ok) {
+        throw new Error(data.message || "Submission failed");
+      }
+      return data;
+    });
   },
 
-  // Update project deadlines
-  updateProjectDeadlines: (
+  // Update project deadline
+  updateProjectDeadline: (
     projectId: string,
     data: {
-      firstDeadline: string;
-      finalDeadline: string;
+      deadline: string;
     }
   ): Promise<any> => {
     return fetchWithAuth(`/api/projects/${projectId}/deadlines`, {
@@ -490,8 +511,7 @@ export const projectsApi = {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        firstDeadline: new Date(data.firstDeadline).toISOString(),
-        finalDeadline: new Date(data.finalDeadline).toISOString(),
+        deadline: new Date(data.deadline).toISOString(),
       }),
     });
   },
@@ -501,8 +521,7 @@ export const projectsApi = {
     projectId: string,
     data: {
       state: "active" | "past";
-      firstDeadline?: string;
-      finalDeadline?: string;
+      deadline?: string;
     }
   ): Promise<any> => {
     return fetchWithAuth(`/api/projects/${projectId}/state`, {
