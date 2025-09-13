@@ -31,7 +31,6 @@ interface Submission {
     file_name: string;
     file_url: string;
     submitted_at: string;
-    phase: number;
     status: string;
 }
 
@@ -40,13 +39,11 @@ interface Project {
     title: string;
     description: string;
     created_at: string;
-    hasSubmittedPhase1: boolean;
-    hasSubmittedPhase2: boolean;
-    phase1Submission?: Submission | null;
-    phase2Submission?: Submission | null;
+    hasSubmitted: boolean;
+    submission?: Submission | null;
     files: File[] | null;
-    phase1DeadlinePassed: boolean;
-    phase2DeadlinePassed: boolean;
+    deadlinePassed: boolean;
+    deadline: string;
 }
 
 const MySubmissions = () => {
@@ -73,7 +70,6 @@ const MySubmissions = () => {
                     (data.projects || []).forEach((p: any) => {
                         uniqueMap.set(p.id, {
                             ...p,
-                            hasSubmitted: p.hasSubmittedPhase1 && p.hasSubmittedPhase2,
                         });
                     });
 
@@ -135,29 +131,14 @@ const MySubmissions = () => {
         });
     };
 
-    const getLatestSubmission = (project: Project) => {
-        const submissions = [];
-        if (project.phase1Submission) submissions.push(project.phase1Submission);
-        if (project.phase2Submission) submissions.push(project.phase2Submission);
-
-        return submissions.sort(
-            (a, b) => new Date(b.submitted_at).getTime() - new Date(a.submitted_at).getTime()
-        )[0];
-    };
-
     const getProjectStatus = (project: Project) => {
-        if (project.hasSubmittedPhase1 && project.hasSubmittedPhase2) return 'completed';
-        if (project.phase1DeadlinePassed || project.phase2DeadlinePassed) return 'overdue';
+        if (project.hasSubmitted) return 'completed';
+        if (project.deadlinePassed) return 'overdue';
         return 'pending';
     };
 
-    const submittedProjects = projects.filter(p =>
-        p.hasSubmittedPhase1 && p.hasSubmittedPhase2
-    );
-
-    const pendingProjects = projects.filter(p =>
-        !p.hasSubmittedPhase1 || !p.hasSubmittedPhase2
-    );
+    const submittedProjects = projects.filter(p => p.hasSubmitted);
+    const pendingProjects = projects.filter(p => !p.hasSubmitted);
 
     if (approvalLoading || isLoading) {
         return (
@@ -258,33 +239,20 @@ const MySubmissions = () => {
                     <div className="grid gap-6">
                         {submittedProjects.map((project) => {
                             const status = getProjectStatus(project);
-                            const latestSubmission = getLatestSubmission(project);
-                            const phaseStatus = [
-                                { phase: 1, data: project.phase1Submission },
-                                { phase: 2, data: project.phase2Submission }
-                            ];
 
                             return (
                                 <div
                                     key={`submitted-${project.id}`}
                                     className="border border-gray-200 rounded-xl shadow-sm hover:shadow-md transition-all duration-300 bg-white overflow-hidden"
                                 >
-                                    <div className={`border-l-4 ${status === 'completed' ? 'border-green-500 bg-green-50' :
-                                        'border-red-500 bg-red-50'
-                                        } pl-4 py-3 flex items-center`}>
-                                        {status === 'completed' ? (
-                                            <CheckCircle2 className="text-green-600 mr-2" size={18} />
-                                        ) : (
-                                            <AlertCircle className="text-red-600 mr-2" size={18} />
-                                        )}
-                                        <span className={`font-medium ${status === 'completed' ? 'text-green-800' : 'text-red-800'
-                                            }`}>
-                                            {status === 'completed' ? 'Completed' : 'Overdue'}
+                                    <div className="border-l-4 border-green-500 bg-green-50 pl-4 py-3 flex items-center">
+                                        <CheckCircle2 className="text-green-600 mr-2" size={18} />
+                                        <span className="font-medium text-green-800">
+                                            Completed
                                         </span>
-                                        {latestSubmission && (
+                                        {project.submission && (
                                             <span className="ml-auto mr-6 text-sm font-medium">
-                                                Last Submission: {formatDate(latestSubmission.submitted_at)}
-                                                {latestSubmission.phase === 2 && ` (Phase 2)`}
+                                                Submitted: {formatDate(project.submission.submitted_at)}
                                             </span>
                                         )}
                                         <Link
@@ -308,33 +276,28 @@ const MySubmissions = () => {
                                                     <Clock className="mr-2" size={16} />
                                                     Created: {formatDate(project.created_at)}
                                                 </div>
+                                                <div className="flex items-center text-sm text-gray-500 mb-2">
+                                                    <Clock className="mr-2" size={16} />
+                                                    Deadline: {formatDate(project.deadline)}
+                                                </div>
                                             </div>
 
                                             <div className="w-full lg:w-1/2 lg:pl-6 lg:border-l lg:border-gray-100">
-                                                <div className="grid grid-cols-2 gap-4 mb-4">
-                                                    {phaseStatus.map(({ phase, data }) => (
-                                                        <div
-                                                            key={`phase-${phase}`}
-                                                            className={`p-3 rounded-lg ${data ? 'bg-green-50' : 'bg-gray-100'
-                                                                }`}
-                                                        >
-                                                            <div className="flex items-center">
-                                                                {data ? (
-                                                                    <CheckCircle2 className="h-5 w-5 text-green-600 mr-2" />
-                                                                ) : (
-                                                                    <Clock className="h-5 w-5 text-gray-600 mr-2" />
-                                                                )}
-                                                                <span className="font-medium">
-                                                                    Phase {phase}
-                                                                </span>
-                                                            </div>
-                                                            {data && (
-                                                                <p className="text-sm text-gray-600 mt-1">
-                                                                    Submitted: {formatDate(data.submitted_at)}
-                                                                </p>
-                                                            )}
+                                                <div className="p-3 rounded-lg bg-green-50 mb-4">
+                                                    <div className="flex items-center">
+                                                        <CheckCircle2 className="h-5 w-5 text-green-600 mr-2" />
+                                                        <span className="font-medium">Submission Complete</span>
+                                                    </div>
+                                                    {project.submission && (
+                                                        <div className="mt-2">
+                                                            <p className="text-sm text-gray-600">
+                                                                File: {project.submission.file_name}
+                                                            </p>
+                                                            <p className="text-sm text-gray-600">
+                                                                Submitted: {formatDate(project.submission.submitted_at)}
+                                                            </p>
                                                         </div>
-                                                    ))}
+                                                    )}
                                                 </div>
 
                                                 {(project.files ?? []).length > 0 && (
@@ -407,10 +370,6 @@ const MySubmissions = () => {
                     <div className="grid gap-6">
                         {pendingProjects.map((project) => {
                             const status = getProjectStatus(project);
-                            const missingPhases = [
-                                !project.hasSubmittedPhase1 && 'Phase 1',
-                                !project.hasSubmittedPhase2 && 'Phase 2'
-                            ].filter(Boolean).join(' and ');
 
                             return (
                                 <div
@@ -429,7 +388,7 @@ const MySubmissions = () => {
                                             {status === 'overdue' ? 'Overdue' : 'Pending'}
                                         </span>
                                         <span className="ml-2 text-sm">
-                                            ({missingPhases} required)
+                                            (Submission required)
                                         </span>
                                         <Link
                                             href={`/projects/${project.id}`}
@@ -451,6 +410,10 @@ const MySubmissions = () => {
                                                 <div className="flex items-center text-sm text-gray-500 mb-2">
                                                     <Clock className="mr-2" size={16} />
                                                     Created: {formatDate(project.created_at)}
+                                                </div>
+                                                <div className="flex items-center text-sm text-gray-500 mb-2">
+                                                    <Clock className="mr-2" size={16} />
+                                                    Deadline: {formatDate(project.deadline)}
                                                 </div>
                                             </div>
 
