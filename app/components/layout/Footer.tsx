@@ -226,7 +226,7 @@ const Footer = () => {
                                     <div className="relative">
                                         <div className="w-16 h-16 rounded-2xl overflow-hidden border-2 border-gradient-to-br from-teal-500 to-cyan-500 shadow-xl">
                                             <Image
-                                                src="https://media.licdn.com/dms/image/v2/D5603AQEg5HxGZJm07w/profile-displayphoto-shrink_400_400/profile-displayphoto-shrink_400_400/0/1731651844420?e=1750291200&v=beta&t=L7f3Y_AXIToUiG6MmWHuMJEiM_dHbqeSTy7qAofDd0Q"
+                                                src="https://avatars.githubusercontent.com/u/83757186?v=4"
                                                 alt="Moksh Upadhyay"
                                                 width={64}
                                                 height={64}
