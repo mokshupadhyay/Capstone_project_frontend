@@ -22,7 +22,6 @@ interface Submission {
   file_name: string;
   file_url: string;
   submitted_at: string;
-  phase: number;
 }
 
 interface Project {
@@ -31,14 +30,10 @@ interface Project {
   description: string;
   created_at: string;
   files: File[];
-  hasSubmittedPhase1: boolean;
-  hasSubmittedPhase2: boolean;
-  phase1Submission?: Submission;
-  phase2Submission?: Submission;
-  hasSubmitted?: boolean;
+  hasSubmitted: boolean;
+  submission?: Submission;
   state?: 'active' | 'past';
-  first_deadline?: string;
-  final_deadline?: string;
+  deadline?: string;
 }
 
 const StudentDashboard = () => {
@@ -74,8 +69,8 @@ const StudentDashboard = () => {
   };
 
   // Filter projects by state and submission status
-  const activeProjects = projects.filter(p => (p.state === 'active' || !p.state) && !p.hasSubmittedPhase2);
-  const pastProjects = projects.filter(p => p.state === 'past' || p.hasSubmittedPhase2);
+  const activeProjects = projects.filter(p => (p.state === 'active' || !p.state) && !p.hasSubmitted);
+  const pastProjects = projects.filter(p => p.state === 'past' || p.hasSubmitted);
 
   if (approvalLoading) {
     return (
@@ -114,7 +109,7 @@ const StudentDashboard = () => {
             <div>
               <p className="text-sm text-gray-500">Completed Projects</p>
               <p className="text-2xl font-bold text-gray-900">
-                {projects.filter(p => p.hasSubmittedPhase2).length}
+                {projects.filter(p => p.hasSubmitted).length}
               </p>
             </div>
           </div>
@@ -128,7 +123,7 @@ const StudentDashboard = () => {
             <div>
               <p className="text-sm text-gray-500">Total Submissions</p>
               <p className="text-2xl font-bold text-gray-900">
-                {projects.reduce((sum, p) => sum + (p.hasSubmittedPhase1 ? 1 : 0) + (p.hasSubmittedPhase2 ? 1 : 0), 0)}
+                {projects.filter(p => p.hasSubmitted).length}
               </p>
             </div>
           </div>
